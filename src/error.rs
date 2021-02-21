@@ -22,12 +22,32 @@ use std::{error, fmt};
 /// ```
 #[derive(Debug)]
 pub enum Error {
+    /// An error which was the result of actions that the user took.
+    ///
+    /// These errors are usually things which a user can easily resolve by
+    /// changing how they interact with the system. Advice should be used
+    /// to guide the user to the correct interaction paths and help them
+    /// self-mitigate without needing to open support tickets.
+    ///
+    /// These errors are usually generated with [`crate::user`], [`crate::user_with_cause`]
+    /// and [`crate::user_with_internal`].
     UserError(
         String,
         String,
         Option<Box<Error>>,
         Option<Box<dyn error::Error + Send + Sync>>,
     ),
+
+    /// An error which was the result of the system failing rather than the user's actions.
+    ///
+    /// These kinds of issues are usually the result of the system entering
+    /// an unexpected state and/or violating an assumption on behalf of the
+    /// developer. Often these issues cannot be resolved by the user directly,
+    /// so the advice should guide them to the best way to raise a bug with you
+    /// and provide you with information to help them fix the issue.
+    ///
+    /// These errors are usually generated with [`crate::system`], [`crate::system_with_cause`]
+    /// and [`crate::system_with_internal`].
     SystemError(
         String,
         String,
@@ -166,7 +186,7 @@ impl Error {
 
     /// Checks if this error is a user error.
     ///
-    /// Returns `true` if this error was created with any of the `user` helper methods,
+    /// Returns `true` if this error is a [Error::UserError],
     /// otherwise `false`.
     ///
     /// # Examples
@@ -190,7 +210,7 @@ impl Error {
 
     /// Checks if this error is a system error.
     ///
-    /// Returns `true` if this error was created with any of the `system` helper methods,
+    /// Returns `true` if this error is a [Error::SystemError],
     /// otherwise `false`.
     ///
     /// # Examples
