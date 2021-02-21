@@ -3,7 +3,7 @@ use std::fmt;
 /// Generates an error with the given `message`.
 ///
 /// Generates a [std::error::Error] compatible error for the given
-/// message. Can be used as the internal error for an [Error].
+/// message. Can be used as the internal error for an [crate::Error].
 ///
 /// # Examples
 /// ```
