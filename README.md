@@ -1,4 +1,4 @@
-# Human Errors
+# Human Errors ![crate](https://img.shields.io/crates/v/human-errors) ![docs](https://docs.rs/human-errors/badge.svg)
 **Errors which make your users' lives easier**
 
 This crate provides an `Error` type which has been designed to make errors
