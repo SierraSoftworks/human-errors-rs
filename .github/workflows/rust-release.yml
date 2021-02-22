@@ -1,4 +1,4 @@
-name: Test Changes
+name: Publish Crate
 on:
   release:
     types: [published]
