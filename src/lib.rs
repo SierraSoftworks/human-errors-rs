@@ -9,6 +9,8 @@ mod description;
 mod error;
 mod helpers;
 mod from;
+#[macro_use]
+mod extend;
 
 pub use description::*;
 pub use error::*;
