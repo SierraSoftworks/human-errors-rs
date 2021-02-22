@@ -86,4 +86,4 @@ jobs:
           CRATES_IO_TOKEN: ${{ secrets.CRATES_IO_TOKEN }}
       
       - name: Publish to Cargo
-        run: cargo publish
+        run: cargo publish --allow-dirty
