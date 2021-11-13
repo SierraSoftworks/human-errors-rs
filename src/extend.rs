@@ -173,7 +173,7 @@ macro_rules! error_shim {
         ///
         /// # Examples
         /// ```
-        /// let err = user(
+        /// let err = human_errors::user(
         ///   "We could not open the config file you provided.",
         ///   "Make sure that the file exists and is readable by the application.",
         /// );
