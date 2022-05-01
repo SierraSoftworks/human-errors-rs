@@ -5,12 +5,12 @@ jobs:
     name: Test
     runs-on: ubuntu-latest
     steps:
-      - name: Get Rust Nightly
+      - name: Get Rust
         id: rust
         uses: actions-rs/toolchain@v1
         with:
           toolchain: stable
-          components: clippy, rustfmt
+          components: clippy, rustfmt, llvm-tools
           override: true
 
       - uses: Swatinem/rust-cache@v1
@@ -43,7 +43,7 @@ jobs:
           args: --all-features --no-fail-fast
         env:
           CARGO_INCREMENTAL: "0"
-          RUSTFLAGS: "-Zprofile -Ccodegen-units=1 -Copt-level=0 -Clink-dead-code -Coverflow-checks=off"
+          RUSTFLAGS: "-Cinstrument-coverage -Ccodegen-units=1 -Copt-level=0 -Clink-dead-code -Coverflow-checks=off"
 
       - name: Collect code coverage
         id: coverage
