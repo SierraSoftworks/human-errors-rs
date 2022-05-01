@@ -202,10 +202,7 @@ impl Error {
     /// println!("is_user?: {}", err.is_user());
     /// ```
     pub fn is_user(&self) -> bool {
-        match self {
-            Error::UserError(..) => true,
-            _ => false,
-        }
+        matches!(self, Error::UserError(..))
     }
 
     /// Checks if this error is a system error.
@@ -226,10 +223,7 @@ impl Error {
     /// println!("is_system?: {}", err.is_system());
     /// ```
     pub fn is_system(&self) -> bool {
-        match self {
-            Error::SystemError(..) => true,
-            _ => false,
-        }
+        matches!(self, Error::SystemError(..))
     }
 }
 

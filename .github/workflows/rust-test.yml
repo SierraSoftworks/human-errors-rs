@@ -23,6 +23,12 @@ jobs:
       - name: Check out code
         uses: actions/checkout@v1
 
+      - name: Run clippy
+        uses: actions-rs/cargo@v1.0.3
+        with:
+          command: clippy
+          args: --all-targets --all-features
+
       - name: Run tests
         uses: actions-rs/cargo@v1.0.3
         with:

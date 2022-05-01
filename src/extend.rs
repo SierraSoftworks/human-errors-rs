@@ -190,6 +190,7 @@ macro_rules! error_shim {
             }
         }
 
+        #[allow(clippy::from_over_into)]
         impl Into<$crate::Error> for $type {
             fn into(self) -> $crate::Error {
                 self.0
