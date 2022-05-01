@@ -7,8 +7,8 @@
 
 mod description;
 mod error;
-mod helpers;
 mod from;
+mod helpers;
 #[macro_use]
 mod extend;
 

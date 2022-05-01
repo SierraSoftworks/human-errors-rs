@@ -1,5 +1,5 @@
-pub use std::error;
 pub use super::Error;
+pub use std::error;
 
 /// A basic error triggered by something the user has done.
 ///
@@ -10,7 +10,7 @@ pub use super::Error;
 /// # Examples
 /// ```
 /// use human_errors;
-/// 
+///
 /// human_errors::user(
 ///   "We could not open the config file you provided.",
 ///   "Make sure that the file exists and is readable by the application.",
@@ -31,7 +31,7 @@ pub fn user(description: &str, advice: &str) -> Error {
 /// # Examples
 /// ```
 /// use human_errors;
-/// 
+///
 /// human_errors::user_with_cause(
 ///   "We could not open the config file you provided.",
 ///   "Make sure that you've specified a valid config file with the --config option.",
@@ -62,7 +62,7 @@ pub fn user_with_cause(description: &str, advice: &str, cause: Error) -> Error {
 /// # Examples
 /// ```
 /// use human_errors;
-/// 
+///
 /// human_errors::user_with_internal(
 ///   "We could not open the config file you provided.",
 ///   "Make sure that the file exists and is readable by the application.",
@@ -90,7 +90,7 @@ where
 /// # Examples
 /// ```
 /// use human_errors;
-/// 
+///
 /// human_errors::system(
 ///   "We could not open the config file you provided.",
 ///   "Make sure that the file exists and is readable by the application."
@@ -111,7 +111,7 @@ pub fn system(description: &str, advice: &str) -> Error {
 /// # Examples
 /// ```
 /// use human_errors;
-/// 
+///
 /// human_errors::system_with_cause(
 ///   "We could not open the config file you provided.",
 ///   "Make sure that you've specified a valid config file with the --config option.",
@@ -142,7 +142,7 @@ pub fn system_with_cause(description: &str, advice: &str, cause: Error) -> Error
 /// # Examples
 /// ```
 /// use human_errors;
-/// 
+///
 /// human_errors::system_with_internal(
 ///   "We could not open the config file you provided.",
 ///   "Make sure that the file exists and is readable by the application.",
@@ -231,8 +231,7 @@ mod tests {
     }
 
     #[test]
-    fn test_message_empty_causes()
-    {
+    fn test_message_empty_causes() {
         assert_eq!(
             user_with_cause(
                 "Something bad happened.",

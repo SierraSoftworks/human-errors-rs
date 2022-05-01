@@ -11,7 +11,7 @@ use std::{error, fmt};
 /// # Examples
 /// ```
 /// use human_errors;
-/// 
+///
 /// let err = human_errors::user(
 ///   "We could not open the config file you provided.",
 ///   "Make sure that the file exists and is readable by the application.",
@@ -65,7 +65,7 @@ impl Error {
     /// # Examples
     /// ```
     /// use human_errors;
-    /// 
+    ///
     /// let err = human_errors::user(
     ///   "We could not open the config file you provided.",
     ///   "Make sure that the file exists and is readable by the application.",
@@ -178,12 +178,8 @@ impl Error {
                 (advice, Some(cause_advice)) if !advice.is_empty() && !cause_advice.is_empty() => {
                     Some(format!("{}\n - {}", cause_advice, advice))
                 }
-                (advice, _) if !advice.is_empty() => {
-                    Some(format!(" - {}", advice))
-                }
-                (_, Some(cause_advice)) if !cause_advice.is_empty() => {
-                    Some(cause_advice)
-                }
+                (advice, _) if !advice.is_empty() => Some(format!(" - {}", advice)),
+                (_, Some(cause_advice)) if !cause_advice.is_empty() => Some(cause_advice),
                 _ => None,
             },
             None if !advice.is_empty() => Some(format!(" - {}", advice)),

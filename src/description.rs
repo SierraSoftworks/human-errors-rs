@@ -40,7 +40,6 @@ impl fmt::Display for BasicInternalError {
     }
 }
 
-
 #[cfg(test)]
 mod tests {
     use super::*;
