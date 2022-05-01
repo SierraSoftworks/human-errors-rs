@@ -229,4 +229,18 @@ mod tests {
             "Whoops! Something bad happened. (This isn't your fault)\n\nThis was caused by:\n - You got rate limited by GitHub.\n\nTo try and fix this, you can:\n - Wait a few minutes and try again.\n - Avoid bad things happening in future"
         );
     }
+
+    #[test]
+    fn test_message_empty_causes()
+    {
+        assert_eq!(
+            user_with_cause(
+                "Something bad happened.",
+                "",
+                user("You got rate limited by GitHub.", "Wait a few minutes and try again.")
+            )
+            .message(),
+            "Oh no! Something bad happened.\n\nThis was caused by:\n - You got rate limited by GitHub.\n\nTo try and fix this, you can:\n - Wait a few minutes and try again."
+        );
+    }
 }

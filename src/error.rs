@@ -130,22 +130,22 @@ impl Error {
         };
 
         match (self.caused_by(), self.advice()) {
-            (Some(cause), Some(advice)) => {
+            (Some(cause), Some(advice)) if !advice.is_empty() => {
                 format!(
                     "{}\n\nThis was caused by:\n{}\n\nTo try and fix this, you can:\n{}",
                     hero_message, cause, advice
                 )
             }
-            (Some(cause), None) => {
+            (Some(cause), _) => {
                 format!("{}\n\nThis was caused by:\n{}", hero_message, cause)
             }
-            (None, Some(advice)) => {
+            (None, Some(advice)) if !advice.is_empty() => {
                 format!(
                     "{}\n\nTo try and fix this, you can:\n{}",
                     hero_message, advice
                 )
             }
-            (None, None) => hero_message,
+            _ => hero_message,
         }
     }
 
@@ -174,13 +174,20 @@ impl Error {
 
         match cause {
             // We bias towards the most specific advice first (i.e. the lowest-level error) because that's most likely to be correct.
-            Some(cause) => match cause.advice() {
-                Some(cause_advice) if !cause_advice.is_empty() => {
+            Some(cause) => match (advice, cause.advice()) {
+                (advice, Some(cause_advice)) if !advice.is_empty() && !cause_advice.is_empty() => {
                     Some(format!("{}\n - {}", cause_advice, advice))
                 }
-                _ => Some(format!(" - {}", advice)),
+                (advice, _) if !advice.is_empty() => {
+                    Some(format!(" - {}", advice))
+                }
+                (_, Some(cause_advice)) if !cause_advice.is_empty() => {
+                    Some(cause_advice)
+                }
+                _ => None,
             },
-            None => Some(format!(" - {}", advice)),
+            None if !advice.is_empty() => Some(format!(" - {}", advice)),
+            _ => None,
         }
     }
 
