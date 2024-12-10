@@ -160,11 +160,19 @@ impl Error {
                 }
             }
             Error::UserError(.., Some(internal)) | Error::SystemError(.., Some(internal)) => {
-                Some(format!(" - {}", internal))
+                Some(self.internal_caused_by(internal.as_ref()))
             }
             _ => None,
         }
     }
+
+    fn internal_caused_by(&self, error: &dyn error::Error) -> String {
+        match error.source() {
+            Some(source) => format!(" - {}\n{}", error, self.internal_caused_by(source)),
+            None => format!(" - {}", error),
+        }
+    }
+
     fn advice(&self) -> Option<String> {
         let (advice, cause) = match self {
             Error::UserError(_, advice, cause, _) | Error::SystemError(_, advice, cause, _) => {
