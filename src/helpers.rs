@@ -1,5 +1,5 @@
 pub use super::Error;
-pub use std::error;
+use std::error;
 
 /// A basic error triggered by something the user has done.
 ///
