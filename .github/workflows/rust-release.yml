@@ -9,7 +9,7 @@ jobs:
     runs-on: ubuntu-20.04
     steps:
       - name: Check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Generate Package Version
         id: version
@@ -46,7 +46,7 @@ jobs:
       - uses: Swatinem/rust-cache@v1
 
       - name: Check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Fetch Versioned Cargo.toml
         uses: actions/download-artifact@v4.1.7
@@ -76,7 +76,7 @@ jobs:
       - uses: Swatinem/rust-cache@v1
 
       - name: Check out code
-        uses: actions/checkout@v2
+        uses: actions/checkout@v4
 
       - name: Fetch Versioned Cargo.toml
         uses: actions/download-artifact@v4.1.7
