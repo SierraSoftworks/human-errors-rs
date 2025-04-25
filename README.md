@@ -58,7 +58,7 @@ error types.
 
 To make this as easy as possible, we expose a helper macro which will construct
 a human errors wrapper in your module which can then be easily extended. This
-macro will publish all of the familiar helper functions you are used to, including:
+macro will publish all the familiar helper functions you are used to, including:
 
 - `user`
 - `user_with_cause`

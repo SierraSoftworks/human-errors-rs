@@ -57,7 +57,7 @@ pub fn user_with_cause(description: &str, advice: &str, cause: Error) -> Error {
 /// occurred, as well as some advice for the user to try to mitigate the problem.
 /// It also includes the details of another error which resulted in this failure.
 ///
-/// **NOTE**: The internal error may be any type which may be converted into a [Box<std::error::Error>].
+/// **NOTE**: The internal error may be any type which may be converted into a [Box<dyn error::Error>].
 ///
 /// # Examples
 /// ```
@@ -137,7 +137,7 @@ pub fn system_with_cause(description: &str, advice: &str, cause: Error) -> Error
 /// occurred, as well as some advice for the user to try to mitigate the problem.
 /// It also includes the details of another error which resulted in this failure.
 ///
-/// **NOTE**: The internal error may be any type which may be converted into a [Box<std::error::Error>].
+/// **NOTE**: The internal error may be any type which may be converted into a [Box<dyn error::Error>].
 ///
 /// # Examples
 /// ```

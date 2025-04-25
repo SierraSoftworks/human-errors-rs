@@ -4,7 +4,7 @@ use std::{error, fmt};
 ///
 /// An error type which encapsulates information about whether an error
 /// is the result of something the user did, or a system failure outside
-/// of their control. These errors include a description of what occurred,
+/// their control. These errors include a description of what occurred,
 /// advice on how to proceed and references to the causal chain which led
 /// to this failure.
 ///
@@ -238,10 +238,10 @@ impl Error {
     }
 }
 
-impl std::error::Error for Error {
+impl error::Error for Error {
     fn source(&self) -> Option<&(dyn error::Error + 'static)> {
         match self {
-            Error::UserError(.., Some(ref err)) | Error::SystemError(.., Some(ref err)) => {
+            Error::UserError(.., Some(err)) | Error::SystemError(.., Some(err)) => {
                 err.source()
             }
             _ => None,

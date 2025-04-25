@@ -9,7 +9,7 @@ keywords = ["errors"]
 categories = ["accessibility", "command-line-interface"]
 authors = ["Benjamin Pannell <benjamin@pannell.dev>"]
 license = "MIT"
-edition = "2018"
+edition = "2024"
 
 # See more keys and their definitions at https://doc.rust-lang.org/cargo/reference/manifest.html
 
