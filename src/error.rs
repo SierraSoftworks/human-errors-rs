@@ -241,9 +241,7 @@ impl Error {
 impl error::Error for Error {
     fn source(&self) -> Option<&(dyn error::Error + 'static)> {
         match self {
-            Error::UserError(.., Some(err)) | Error::SystemError(.., Some(err)) => {
-                err.source()
-            }
+            Error::UserError(.., Some(err)) | Error::SystemError(.., Some(err)) => err.source(),
             _ => None,
         }
     }

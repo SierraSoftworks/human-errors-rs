@@ -213,7 +213,10 @@ mod tests {
             user_with_cause(
                 "Something bad happened.",
                 "Avoid bad things happening in future",
-                user("You got rate limited by GitHub.", "Wait a few minutes and try again.")
+                user(
+                    "You got rate limited by GitHub.",
+                    "Wait a few minutes and try again."
+                )
             )
             .message(),
             "Oh no! Something bad happened.\n\nThis was caused by:\n - You got rate limited by GitHub.\n\nTo try and fix this, you can:\n - Wait a few minutes and try again.\n - Avoid bad things happening in future"
@@ -223,7 +226,10 @@ mod tests {
             system_with_cause(
                 "Something bad happened.",
                 "Avoid bad things happening in future",
-                system("You got rate limited by GitHub.", "Wait a few minutes and try again.")
+                system(
+                    "You got rate limited by GitHub.",
+                    "Wait a few minutes and try again."
+                )
             )
             .message(),
             "Whoops! Something bad happened. (This isn't your fault)\n\nThis was caused by:\n - You got rate limited by GitHub.\n\nTo try and fix this, you can:\n - Wait a few minutes and try again.\n - Avoid bad things happening in future"
@@ -236,7 +242,10 @@ mod tests {
             user_with_cause(
                 "Something bad happened.",
                 "",
-                user("You got rate limited by GitHub.", "Wait a few minutes and try again.")
+                user(
+                    "You got rate limited by GitHub.",
+                    "Wait a few minutes and try again."
+                )
             )
             .message(),
             "Oh no! Something bad happened.\n\nThis was caused by:\n - You got rate limited by GitHub.\n\nTo try and fix this, you can:\n - Wait a few minutes and try again."

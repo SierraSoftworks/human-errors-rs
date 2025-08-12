@@ -1,4 +1,4 @@
-use crate::{user_with_internal, Error};
+use crate::{Error, user_with_internal};
 use std::string::FromUtf8Error;
 
 impl From<FromUtf8Error> for Error {
