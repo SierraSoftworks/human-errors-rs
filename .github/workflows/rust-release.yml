@@ -81,7 +81,7 @@ jobs:
               -format=lcov > lcov.info
 
       - name: Upload code coverage
-        uses: codecov/codecov-action@v5.4.3
+        uses: codecov/codecov-action@v5.5.0
         with:
           token: ${{ secrets.CODECOV_TOKEN }}
 
