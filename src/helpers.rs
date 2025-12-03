@@ -1,53 +1,29 @@
-pub use super::Error;
-use std::error;
+pub use super::{Error, Kind};
+use std::{borrow::Cow, error};
 
-/// A basic error triggered by something the user has done.
+/// An error triggered by something the user has done, with a deeper cause.
 ///
 /// Constructs a new [Error] describing a failure which was the result of an
 /// action that the user has taken. This error includes a description of what
 /// occurred, as well as some advice for the user to try to mitigate the problem.
+/// It also includes the details of another error which resulted in this failure.
+///
+/// **NOTE**: The internal error may be any type which may be converted into a [Box<dyn error::Error>].
 ///
 /// # Examples
 /// ```
 /// use human_errors;
 ///
 /// human_errors::user(
-///   "We could not open the config file you provided.",
-///   "Make sure that the file exists and is readable by the application.",
+///   "ENOENT 2: No such file or directory",
+///   &["Make sure that the file exists and is readable by the application."],
 /// );
 /// ```
-pub fn user(description: &str, advice: &str) -> Error {
-    Error::UserError(description.to_string(), advice.to_string(), None, None)
-}
-
-/// An error triggered by something the user has done, with a deeper cause.
-///
-/// Constructs a new [Error] describing a failure which was the result of an
-/// action that the user has taken. This error includes a description of what
-/// occurred, as well as some advice for the user to try to mitigate the problem.
-/// It also includes the details of another error which resulted in this failure,
-/// as well as any advice that error may provide.
-///
-/// # Examples
-/// ```
-/// use human_errors;
-///
-/// human_errors::user_with_cause(
-///   "We could not open the config file you provided.",
-///   "Make sure that you've specified a valid config file with the --config option.",
-///   human_errors::user(
-///     "We could not find a file at /home/user/.config/demo.yml",
-///     "Make sure that the file exists and is readable by the application."
-///   )
-/// );
-/// ```
-pub fn user_with_cause(description: &str, advice: &str, cause: Error) -> Error {
-    Error::UserError(
-        description.to_string(),
-        advice.to_string(),
-        Some(Box::from(cause)),
-        None,
-    )
+pub fn user<T>(error: T, advice: &'static [&'static str]) -> Error
+where
+    T: Into<Box<dyn error::Error + Send + Sync>>,
+{
+    Error::new(error.into(), Kind::User, advice)
 }
 
 /// An error triggered by something the user has done, with a deeper cause.
@@ -63,71 +39,46 @@ pub fn user_with_cause(description: &str, advice: &str, cause: Error) -> Error {
 /// ```
 /// use human_errors;
 ///
-/// human_errors::user_with_internal(
-///   "We could not open the config file you provided.",
-///   "Make sure that the file exists and is readable by the application.",
-///   human_errors::detailed_message("ENOENT 2: No such file or directory")
+/// human_errors::wrap_user(
+///  human_errors::system("The configuration file was not found.", &["Make sure that the file exists and try again."]),
+///  "We could not open the config file you provided.",
+///  &["Make sure that the file exists and is readable by the application."],
 /// );
 /// ```
-pub fn user_with_internal<T>(description: &str, advice: &str, internal: T) -> Error
-where
-    T: Into<Box<dyn error::Error + Send + Sync>>,
-{
-    Error::UserError(
-        description.to_string(),
-        advice.to_string(),
-        None,
-        Some(internal.into()),
-    )
+pub fn wrap_user<
+    S: Into<Cow<'static, str>> + 'static,
+    E: Into<Box<dyn std::error::Error + Send + Sync + 'static>> + 'static,
+>(
+    inner: E,
+    message: S,
+    advice: &'static [&'static str],
+) -> Error {
+    Error::new(super::wrap(inner, message), Kind::User, advice)
 }
 
-/// An error triggered by the system rather than the user.
+/// An error triggered by the system rather than the user, with a deeper cause.
 ///
 /// Constructs a new [Error] describing a failure which was the result of a failure
 /// in the system, rather than a user's action. This error includes a description of what
 /// occurred, as well as some advice for the user to try to mitigate the problem.
+/// It also includes the details of another error which resulted in this failure.
+///
+/// **NOTE**: The internal error may be any type which may be converted into a [Box<dyn error::Error>].
 ///
 /// # Examples
 /// ```
 /// use human_errors;
 ///
 /// human_errors::system(
-///   "We could not open the config file you provided.",
-///   "Make sure that the file exists and is readable by the application."
+///   "ENOENT 2: No such file or directory",
+///   &["Make sure that the file exists and is readable by the application."],
 /// );
 /// ```
-pub fn system(description: &str, advice: &str) -> Error {
-    Error::SystemError(description.to_string(), advice.to_string(), None, None)
-}
-
-/// An error triggered by the system rather than the user, with a deeper cause.
-///
-/// Constructs a new [Error] describing a failure which was the result of a failure
-/// in the system, rather than a user's action. This error includes a description of what
-/// occurred, as well as some advice for the user to try to mitigate the problem.
-/// It also includes the details of another error which resulted in this failure,
-/// as well as any advice that error may provide.
-///
-/// # Examples
-/// ```
-/// use human_errors;
-///
-/// human_errors::system_with_cause(
-///   "We could not open the config file you provided.",
-///   "Make sure that you've specified a valid config file with the --config option.",
-///   human_errors::system(
-///     "We could not find a file at /home/user/.config/demo.yml",
-///     "Make sure that the file exists and is readable by the application."
-///   )
-/// );
-/// ```
-pub fn system_with_cause(description: &str, advice: &str, cause: Error) -> Error {
-    Error::SystemError(
-        description.to_string(),
-        advice.to_string(),
-        Some(Box::from(cause)),
-        None,
-    )
+pub fn system<T>(error: T, advice: &'static [&'static str]) -> Error
+where
+    T: Into<Box<dyn error::Error + Send + Sync>>,
+{
+    Error::new(error.into(), Kind::System, advice)
 }
 
 /// An error triggered by the system rather than the user, with a deeper cause.
@@ -142,23 +93,21 @@ pub fn system_with_cause(description: &str, advice: &str, cause: Error) -> Error
 /// # Examples
 /// ```
 /// use human_errors;
-///
-/// human_errors::system_with_internal(
-///   "We could not open the config file you provided.",
-///   "Make sure that the file exists and is readable by the application.",
-///   human_errors::detailed_message("ENOENT 2: No such file or directory")
+/// human_errors::wrap_system(
+///  human_errors::user("The configuration file was not found.", &["Make sure that the file exists and try again."]),
+///  "We could not open the config file you provided.",
+///  &["Make sure that the file exists and is readable by the application."],
 /// );
 /// ```
-pub fn system_with_internal<T>(description: &str, advice: &str, internal: T) -> Error
-where
-    T: Into<Box<dyn error::Error + Send + Sync>>,
-{
-    Error::SystemError(
-        description.to_string(),
-        advice.to_string(),
-        None,
-        Some(internal.into()),
-    )
+pub fn wrap_system<
+    S: Into<Cow<'static, str>> + 'static,
+    E: Into<Box<dyn std::error::Error + Send + Sync + 'static>> + 'static,
+>(
+    inner: E,
+    message: S,
+    advice: &'static [&'static str],
+) -> Error {
+    Error::new(super::wrap(inner, message), Kind::System, advice)
 }
 
 #[cfg(test)]
@@ -170,7 +119,7 @@ mod tests {
         assert_eq!(
             user(
                 "Something bad happened",
-                "Avoid bad things happening in future"
+                &["Avoid bad things happening in future"]
             )
             .description(),
             "Something bad happened"
@@ -179,7 +128,7 @@ mod tests {
         assert_eq!(
             system(
                 "Something bad happened",
-                "Avoid bad things happening in future"
+                &["Avoid bad things happening in future"]
             )
             .description(),
             "Something bad happened"
@@ -191,7 +140,7 @@ mod tests {
         assert_eq!(
             user(
                 "Something bad happened.",
-                "Avoid bad things happening in future"
+                &["Avoid bad things happening in future"]
             )
             .message(),
             "Oh no! Something bad happened.\n\nTo try and fix this, you can:\n - Avoid bad things happening in future"
@@ -200,7 +149,7 @@ mod tests {
         assert_eq!(
             system(
                 "Something bad happened.",
-                "Avoid bad things happening in future"
+                &["Avoid bad things happening in future"]
             )
             .message(),
             "Whoops! Something bad happened. (This isn't your fault)\n\nTo try and fix this, you can:\n - Avoid bad things happening in future"
@@ -208,47 +157,25 @@ mod tests {
     }
 
     #[test]
-    fn test_message_cause() {
+    fn test_message_wrapped() {
         assert_eq!(
-            user_with_cause(
+            wrap_user(
+                "You got rate limited",
                 "Something bad happened.",
-                "Avoid bad things happening in future",
-                user(
-                    "You got rate limited by GitHub.",
-                    "Wait a few minutes and try again."
-                )
+                &["Avoid bad things happening in future"]
             )
             .message(),
-            "Oh no! Something bad happened.\n\nThis was caused by:\n - You got rate limited by GitHub.\n\nTo try and fix this, you can:\n - Wait a few minutes and try again.\n - Avoid bad things happening in future"
+            "Oh no! Something bad happened.\n\nThis was caused by:\n - You got rate limited\n\nTo try and fix this, you can:\n - Avoid bad things happening in future"
         );
 
         assert_eq!(
-            system_with_cause(
+            wrap_system(
+                "You got rate limited",
                 "Something bad happened.",
-                "Avoid bad things happening in future",
-                system(
-                    "You got rate limited by GitHub.",
-                    "Wait a few minutes and try again."
-                )
+                &["Avoid bad things happening in future"]
             )
             .message(),
-            "Whoops! Something bad happened. (This isn't your fault)\n\nThis was caused by:\n - You got rate limited by GitHub.\n\nTo try and fix this, you can:\n - Wait a few minutes and try again.\n - Avoid bad things happening in future"
-        );
-    }
-
-    #[test]
-    fn test_message_empty_causes() {
-        assert_eq!(
-            user_with_cause(
-                "Something bad happened.",
-                "",
-                user(
-                    "You got rate limited by GitHub.",
-                    "Wait a few minutes and try again."
-                )
-            )
-            .message(),
-            "Oh no! Something bad happened.\n\nThis was caused by:\n - You got rate limited by GitHub.\n\nTo try and fix this, you can:\n - Wait a few minutes and try again."
+            "Whoops! Something bad happened. (This isn't your fault)\n\nThis was caused by:\n - You got rate limited\n\nTo try and fix this, you can:\n - Avoid bad things happening in future"
         );
     }
 }

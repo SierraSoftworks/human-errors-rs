@@ -1,70 +1,125 @@
+use std::borrow::Cow;
+
 use super::*;
 
 /// Extension trait for `Result` to convert errors into user-friendly or
 /// system-friendly `Error` types.
-/// 
+///
 /// # Examples
 /// ```
-/// use human_errors::{ResultExt, user, system};
-/// 
-/// fn might_fail(i: i32) -> Result<i32, std::io::Error> {
-///     if i % 2 == 0 {
-///         Ok(i)
-///     } else {
-///         Err(std::io::Error::new(std::io::ErrorKind::Other, "odd number error"))
-///     }
-/// }
-/// 
-/// fn process_number(i: i32) -> Result<i32, human_errors::Error> {
-///     might_fail(i).into_user_error(
-///         "Failed to process the number.",
-///         "Ensure the number is even."
-///     )
-/// }
-/// 
-/// fn main() {
-///     match process_number(3) {
-///         Ok(n) => println!("Processed number: {}", n),
-///         Err(e) => println!("{}", e.message()),
-///     }
-/// }
+/// use human_errors::ResultExt;
+///
+/// // Converts any error into a user-caused error with the provided advice.
+/// "0.not a number".parse::<i32>()
+///     .map_err_as_user(&["Please provide a valid integer input."]);
+///
+/// // Converts any error into a system-caused error with the provided advice.
+/// "0.not a number".parse::<i32>()
+///     .map_err_as_system(&["Please check your system configuration."]);
+///
+/// // Wraps any error into a user-caused error with a custom message and advice.
+/// "0.not a number".parse::<i32>()
+///     .wrap_err_as_user(
+///         "Failed to parse the provided input as an integer.",
+///         &["Please provide a valid integer input."],
+///     );
+///
+/// // Wraps any error into a system-caused error with a custom message and advice.
+/// "0.not a number".parse::<i32>()
+///     .wrap_err_as_system(
+///         "Failed to parse the provided input as an integer.",
+///         &["Please check your system configuration."],
+///     );
 /// ```
 pub trait ResultExt<T> {
     /// Converts a `Result<T, E>` into a `Result<T, Error>`, wrapping any
+    /// error in a user-facing error with the provided advice.
+    ///
+    /// # Examples
+    /// ```
+    /// use human_errors::ResultExt;
+    ///
+    /// "0.not a number".parse::<i32>()
+    ///     .map_err_as_user(&["Please provide a valid integer input."]);
+    /// ```
+    fn map_err_as_user(self, advice: &'static [&'static str]) -> Result<T, Error>;
+
+    /// Converts a `Result<T, E>` into a `Result<T, Error>`, wrapping any
     /// error in a user-facing error with the provided description and advice.
-    fn into_user_error(
+    ///
+    /// # Examples
+    /// ```
+    /// use human_errors::ResultExt;
+    ///
+    /// "0.not a number".parse::<i32>()
+    ///     .wrap_err_as_user(
+    ///         "Failed to parse the provided input as an integer.",
+    ///         &["Please provide a valid integer input."],
+    ///     );
+    /// ```
+    fn wrap_err_as_user<S: Into<Cow<'static, str>> + 'static>(
         self,
-        description: &str,
-        advice: &str,
+        message: S,
+        advice: &'static [&'static str],
     ) -> Result<T, Error>;
 
     /// Converts a `Result<T, E>` into a `Result<T, Error>`, wrapping any
+    /// error in a system-facing error with the provided advice.
+    ///
+    /// # Examples
+    /// ```
+    /// use human_errors::ResultExt;
+    ///
+    /// "0.not a number".parse::<i32>()
+    ///     .map_err_as_system(&["Please report this issue to the dev team."]);
+    /// ```
+    fn map_err_as_system(self, advice: &'static [&'static str]) -> Result<T, Error>;
+
+    /// Converts a `Result<T, E>` into a `Result<T, Error>`, wrapping any
     /// error in a system-facing error with the provided description and advice.
-    fn into_system_error(
+    /// # Examples
+    /// ```
+    /// use human_errors::ResultExt;
+    ///
+    /// "0.not a number".parse::<i32>()
+    ///     .wrap_err_as_system(
+    ///         "Failed to parse the provided input as an integer.",
+    ///         &["Please report this issue to the dev team."],
+    ///     );
+    /// ```
+    fn wrap_err_as_system<S: Into<Cow<'static, str>> + 'static>(
         self,
-        description: &str,
-        advice: &str,
+        message: S,
+        advice: &'static [&'static str],
     ) -> Result<T, Error>;
 }
 
-impl <T, E> ResultExt<T> for Result<T, E>
+impl<T, E> ResultExt<T> for Result<T, E>
 where
-    E: Into<Box<dyn std::error::Error + Send + Sync>>,
+    E: Into<Box<dyn std::error::Error + Send + Sync>> + 'static,
 {
-    fn into_user_error(
-        self,
-        description: &str,
-        advice: &str,
-    ) -> Result<T, Error> {
-        self.map_err(|e| user_with_internal(description, advice, e))
+    fn map_err_as_user(self, advice: &'static [&'static str]) -> Result<T, Error> {
+        self.map_err(|e| user(e, advice))
     }
 
-    fn into_system_error(
+    fn wrap_err_as_user<S: Into<Cow<'static, str>> + 'static>(
         self,
-        description: &str,
-        advice: &str,
+        message: S,
+        advice: &'static [&'static str],
     ) -> Result<T, Error> {
-        self.map_err(|e| system_with_internal(description, advice, e))
+        self.map_err(|e| user(wrap_user(e, message, advice), advice))
+    }
+
+    fn map_err_as_system(self, advice: &'static [&'static str]) -> Result<T, Error> {
+        self.map_err(|e| system(e, advice))
+    }
+
+    fn wrap_err_as_system<S: Into<Cow<'static, str>> + 'static>(
+        self,
+        message: S,
+        advice: &'static [&'static str],
+    ) -> Result<T, Error> {
+        self.map_err(|e| system(wrap_system(e, message, advice), advice))
     }
 }
 
@@ -74,37 +129,25 @@ mod tests {
 
     #[test]
     fn test_into_user_error() {
-        let result: Result<i32, std::io::Error> = Err(std::io::Error::new(
-            std::io::ErrorKind::Other,
-            "underlying error",
-        ));
+        let result: Result<i32, std::io::Error> = Err(std::io::Error::other("underlying error"));
 
         let user_error = result
-            .into_user_error(
-                "Failed to perform operation.",
-                "Please check your input and try again.",
-            )
+            .map_err_as_user(&["Please check your input and try again."])
             .err()
             .unwrap();
 
-        assert!(user_error.is_user());
+        assert!(user_error.is(Kind::User));
     }
 
     #[test]
     fn test_into_system_error() {
-        let result: Result<i32, std::io::Error> = Err(std::io::Error::new(
-            std::io::ErrorKind::Other,
-            "underlying error",
-        ));
+        let result: Result<i32, std::io::Error> = Err(std::io::Error::other("underlying error"));
 
         let system_error = result
-            .into_system_error(
-                "Failed to perform operation.",
-                "Please check your input and try again.",
-            )
+            .map_err_as_system(&["Please check your input and try again."])
             .err()
             .unwrap();
 
-        assert!(system_error.is_system());
+        assert!(system_error.is(Kind::System));
     }
 }
