@@ -1,27 +1,5 @@
-pub use super::{Error, Kind, basic};
+pub use super::{Error, Kind};
 use std::{borrow::Cow, error};
-
-/// A basic error triggered by something the user has done.
-///
-/// Constructs a new [Error] describing a failure which was the result of an
-/// action that the user has taken. This error includes a description of what
-/// occurred, as well as some advice for the user to try to mitigate the problem.
-///
-/// # Examples
-/// ```
-/// use human_errors;
-///
-/// human_errors::user_error(
-///   "We could not open the config file you provided.",
-///   &["Make sure that the file exists and is readable by the application."],
-/// );
-/// ```
-pub fn user_error<S: Into<Cow<'static, str>>>(
-    description: S,
-    advice: &'static [&'static str],
-) -> Error {
-    Error::new(basic(description.into()), Kind::User, advice)
-}
 
 /// An error triggered by something the user has done, with a deeper cause.
 ///
@@ -37,7 +15,7 @@ pub fn user_error<S: Into<Cow<'static, str>>>(
 /// use human_errors;
 ///
 /// human_errors::user(
-///   human_errors::basic("ENOENT 2: No such file or directory"),
+///   "ENOENT 2: No such file or directory",
 ///   &["Make sure that the file exists and is readable by the application."],
 /// );
 /// ```
@@ -62,7 +40,7 @@ where
 /// use human_errors;
 ///
 /// human_errors::wrap_user(
-///  human_errors::system_error("The configuration file was not found.", &["Make sure that the file exists and try again."]),
+///  human_errors::system("The configuration file was not found.", &["Make sure that the file exists and try again."]),
 ///  "We could not open the config file you provided.",
 ///  &["Make sure that the file exists and is readable by the application."],
 /// );
@@ -75,29 +53,7 @@ pub fn wrap_user<
     message: S,
     advice: &'static [&'static str],
 ) -> Error {
-    Error::new(super::wrap(message, inner), Kind::User, advice)
-}
-
-/// An error triggered by the system rather than the user.
-///
-/// Constructs a new [Error] describing a failure which was the result of a failure
-/// in the system, rather than a user's action. This error includes a description of what
-/// occurred, as well as some advice for the user to try to mitigate the problem.
-///
-/// # Examples
-/// ```
-/// use human_errors;
-///
-/// human_errors::system_error(
-///   "We could not open the config file you provided.",
-///   &["Make sure that the file exists and is readable by the application."]
-/// );
-/// ```
-pub fn system_error<S: Into<Cow<'static, str>>>(
-    description: S,
-    advice: &'static [&'static str],
-) -> Error {
-    Error::new(basic(description.into()), Kind::System, advice)
+    Error::new(super::wrap(inner, message), Kind::User, advice)
 }
 
 /// An error triggered by the system rather than the user, with a deeper cause.
@@ -114,7 +70,7 @@ pub fn system_error<S: Into<Cow<'static, str>>>(
 /// use human_errors;
 ///
 /// human_errors::system(
-///   human_errors::basic("ENOENT 2: No such file or directory"),
+///   "ENOENT 2: No such file or directory",
 ///   &["Make sure that the file exists and is readable by the application."],
 /// );
 /// ```
@@ -138,7 +94,7 @@ where
 /// ```
 /// use human_errors;
 /// human_errors::wrap_system(
-///  human_errors::user_error("The configuration file was not found.", &["Make sure that the file exists and try again."]),
+///  human_errors::user("The configuration file was not found.", &["Make sure that the file exists and try again."]),
 ///  "We could not open the config file you provided.",
 ///  &["Make sure that the file exists and is readable by the application."],
 /// );
@@ -151,7 +107,7 @@ pub fn wrap_system<
     message: S,
     advice: &'static [&'static str],
 ) -> Error {
-    Error::new(super::wrap(message, inner), Kind::System, advice)
+    Error::new(super::wrap(inner, message), Kind::System, advice)
 }
 
 #[cfg(test)]
@@ -204,7 +160,7 @@ mod tests {
     fn test_message_wrapped() {
         assert_eq!(
             wrap_user(
-                basic("You got rate limited"),
+                "You got rate limited",
                 "Something bad happened.",
                 &["Avoid bad things happening in future"]
             )
@@ -214,7 +170,7 @@ mod tests {
 
         assert_eq!(
             wrap_system(
-                basic("You got rate limited"),
+                "You got rate limited",
                 "Something bad happened.",
                 &["Avoid bad things happening in future"]
             )

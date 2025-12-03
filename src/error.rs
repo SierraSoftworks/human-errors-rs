@@ -53,7 +53,7 @@ impl Kind {
 /// ```
 /// use human_errors;
 ///
-/// let err = human_errors::user_error(
+/// let err = human_errors::user(
 ///   "We could not open the config file you provided.",
 ///   &["Make sure that the file exists and is readable by the application."],
 /// );
@@ -74,9 +74,8 @@ impl Error {
     /// # Examples
     /// ```
     /// use human_errors;
-    /// let internal_error = human_errors::basic("Low-level IO error details");
     /// let err = human_errors::Error::new(
-    ///     internal_error,
+    ///     "Low-level IO error details",
     ///     human_errors::Kind::System,
     ///     &["Try restarting the application", "If the problem persists, contact support"]
     /// );
@@ -102,7 +101,7 @@ impl Error {
     /// ```
     /// use human_errors;
     ///
-    /// let err = human_errors::user_error(
+    /// let err = human_errors::user(
     ///   "We could not open the config file you provided.",
     ///   &["Make sure that the file exists and is readable by the application."],
     /// );
@@ -131,7 +130,7 @@ impl Error {
     /// use human_errors;
     ///
     /// let err = human_errors::wrap_user(
-    ///   human_errors::user_error(
+    ///   human_errors::user(
     ///     "We could not find a file at /home/user/.config/demo.yml",
     ///     &["Make sure that the file exists and is readable by the application."]
     ///   ),
@@ -202,7 +201,7 @@ impl Error {
 
         let mut cause = self.error.as_ref();
         while let Some(err) = cause.downcast_ref::<Error>() {
-            advice.extend_from_slice(&err.advice);
+            advice.extend_from_slice(err.advice);
             cause = err.error.as_ref();
         }
 
@@ -220,7 +219,7 @@ impl Error {
     /// ```
     /// use human_errors;
     ///
-    /// let err = human_errors::user_error(
+    /// let err = human_errors::user(
     ///   "We could not open the config file you provided.",
     ///   &["Make sure that the file exists and is readable by the application."],
     /// );

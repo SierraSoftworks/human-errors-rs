@@ -53,48 +53,59 @@ To try and fix this, you can:
 
 ## Getting Started
 
-The easiest way to construct a human-errors `Error` is to use the `user_error`
-and `system_error` helper functions. These allow you to quickly create errors
+The easiest way to construct a human-errors `Error` is to use the `user`
+and `system` helper functions. These allow you to quickly create errors
 of either kind with a message and advice for how to resolve the issue.
 
 ```rust
 use human_errors;
 
-human_errors::user_error(
+human_errors::user(
     "We could not find the configuration file.",
     &["Make sure that you've specified a valid config file with the --config option."]
 );
 
-human_errors::system_error(
+human_errors::system(
     "A low-level IO error occurred.",
     &["Please try again later or contact support if the issue persists."]
 );
 ```
 
-## Wrapping Other Errors
-
-When working with errors from other crates and the standard library, you will
-often find yourself needing to convert those errors into `human_errors` error
-types. We provide several helper methods which assist with this, including the
-`user` and `system` functions for wrapping existing errors, and their siblings
-`wrap_user` and `wrap_system` which allow you to add an additional error message
-to provide more context if needed.
+These methods can also be used to wrap existing errors, adding advice on how to best
+deal with them.
 
 ```rust
+use std::fs;
+
+fn read_config() -> Result<String, human_errors::Error> {
+    fs::read_to_string("config.toml").map_err(|err| {
+        human_errors::user(
+            err,
+            &["Make sure that you've specified a valid config file with the --config option."]
+        )
+    })
+}
+```
+
+If you find yourself wanting to add a better error message, you can use the `wrap_user`
+and `wrap_system` methods to add additional context to an existing error.
+
+```rust
+use std::fs;
 use human_errors;
 
-let err = "0.not-a-number".parse::<u32>().unwrap_err();
-
-human_errors::user(
-    err,
-    &["Make sure that you've provided a valid unsigned integer."]
-)
-
-human_errors::wrap_user(
-    err,
-    "We could not parse the user ID you provided.",
-    &["Make sure that you've provided a valid unsigned integer."]
-)
+fn read_config() -> Result<String, human_errors::Error> {
+    fs::read_to_string("config.toml").map_err(|err| {
+        human_errors::wrap_user(
+            err,
+            "We could not read the 'config.toml' configuration file.",
+            &[
+                "Make sure that the 'config.toml' configuration file exists.",
+                "Ensure that you have permission to read the 'config.toml' file.",
+            ]
+        )
+    })
+}
 ```
 
 ### Working with Results

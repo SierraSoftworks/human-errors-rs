@@ -129,8 +129,7 @@ mod tests {
 
     #[test]
     fn test_into_user_error() {
-        let result: Result<i32, std::io::Error> = Err(std::io::Error::new(
-            std::io::ErrorKind::Other,
+        let result: Result<i32, std::io::Error> = Err(std::io::Error::other(
             "underlying error",
         ));
 

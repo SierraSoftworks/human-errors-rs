@@ -1,27 +1,5 @@
 use std::{borrow::Cow, fmt};
 
-/// Generates a basic error with the given `message`.
-///
-/// Generates a [std::error::Error] compatible error for the given
-/// message. Can be used as the internal error for a [crate::Error].
-///
-/// # Examples
-/// ```
-/// use human_errors;
-///
-/// human_errors::user(
-///   human_errors::basic("ENOENT 2: No such file or directory"),
-///   &["Make sure that the file exists and is readable by the application."],
-/// );
-/// ```
-pub fn basic<S: Into<Cow<'static, str>>>(message: S) -> impl std::error::Error {
-    let message = message.into();
-    BasicInternalError {
-        message,
-        inner: None,
-    }
-}
-
 /// Wraps an existing error with a basic message.
 ///
 /// Generates a [std::error::Error] compatible error which wraps
@@ -33,16 +11,16 @@ pub fn basic<S: Into<Cow<'static, str>>>(message: S) -> impl std::error::Error {
 /// use human_errors;
 ///
 /// human_errors::wrap(
-///   "We could not open the config file you provided.",
-///   human_errors::basic("ENOENT 2: No such file or directory")
+///   "ENOENT 2: No such file or directory",
+///   "We could not open the config file you provided."
 /// );
 /// ```
 pub fn wrap<
     S: Into<Cow<'static, str>>,
     E: Into<Box<dyn std::error::Error + Send + Sync + 'static>>,
 >(
-    message: S,
     inner: E,
+    message: S,
 ) -> impl std::error::Error {
     let message = message.into();
     BasicInternalError {
@@ -81,7 +59,7 @@ mod tests {
     fn test_message_internal() {
         assert_eq!(
             user(
-                wrap("Something bad happened.", basic("You got rate limited")),
+                wrap("You got rate limited", "Something bad happened."),
                 &["Avoid bad things happening in future"],
             )
             .message(),
@@ -90,7 +68,7 @@ mod tests {
 
         assert_eq!(
             system(
-                wrap("Something bad happened.", basic("You got rate limited")),
+                wrap("You got rate limited", "Something bad happened."),
                 &["Avoid bad things happening in future"],
             )
             .message(),
