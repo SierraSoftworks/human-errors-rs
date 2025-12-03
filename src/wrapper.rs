@@ -23,19 +23,19 @@ pub fn wrap<
     message: S,
 ) -> impl std::error::Error {
     let message = message.into();
-    BasicInternalError {
+    ErrorWithMessage {
         message,
         inner: Some(inner.into()),
     }
 }
 
 #[derive(Debug)]
-struct BasicInternalError {
+struct ErrorWithMessage {
     message: Cow<'static, str>,
     inner: Option<Box<dyn std::error::Error + Send + Sync + 'static>>,
 }
 
-impl std::error::Error for BasicInternalError {
+impl std::error::Error for ErrorWithMessage {
     fn source(&self) -> Option<&(dyn std::error::Error + 'static)> {
         match &self.inner {
             Some(inner) => Some(&**inner),
@@ -44,7 +44,7 @@ impl std::error::Error for BasicInternalError {
     }
 }
 
-impl fmt::Display for BasicInternalError {
+impl fmt::Display for ErrorWithMessage {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.message)
     }
