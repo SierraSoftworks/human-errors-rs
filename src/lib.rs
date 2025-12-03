@@ -5,13 +5,13 @@
 //! resolve) a failure. Designed to make you treat recovery from failure
 //! as a fundamental part of the design process in your application.
 
-mod wrapper;
 mod error;
 mod from;
 mod helpers;
 mod result;
+mod wrapper;
 
-pub use wrapper::*;
 pub use error::*;
 pub use helpers::*;
 pub use result::ResultExt;
+pub use wrapper::*;

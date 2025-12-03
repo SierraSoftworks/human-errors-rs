@@ -129,9 +129,7 @@ mod tests {
 
     #[test]
     fn test_into_user_error() {
-        let result: Result<i32, std::io::Error> = Err(std::io::Error::other(
-            "underlying error",
-        ));
+        let result: Result<i32, std::io::Error> = Err(std::io::Error::other("underlying error"));
 
         let user_error = result
             .map_err_as_user(&["Please check your input and try again."])
@@ -143,9 +141,7 @@ mod tests {
 
     #[test]
     fn test_into_system_error() {
-        let result: Result<i32, std::io::Error> = Err(std::io::Error::other(
-            "underlying error",
-        ));
+        let result: Result<i32, std::io::Error> = Err(std::io::Error::other("underlying error"));
 
         let system_error = result
             .map_err_as_system(&["Please check your input and try again."])
