@@ -11,7 +11,9 @@ mod from;
 mod helpers;
 #[macro_use]
 mod extend;
+mod result;
 
 pub use description::*;
 pub use error::*;
 pub use helpers::*;
+pub use result::ResultExt;
