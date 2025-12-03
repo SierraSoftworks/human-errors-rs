@@ -12,7 +12,9 @@ impl From<io::Error> for Error {
             io::ErrorKind::PermissionDenied => wrap_user(
                 err,
                 "Permission denied when trying to access the requested resource.",
-                &["Check the file permissions and ensure that the application has access to the resource."],
+                &[
+                    "Check the file permissions and ensure that the application has access to the resource.",
+                ],
             ),
             io::ErrorKind::AlreadyExists => wrap_user(
                 err,
@@ -27,12 +29,16 @@ impl From<io::Error> for Error {
             io::ErrorKind::DirectoryNotEmpty => wrap_user(
                 err,
                 "The directory you are trying to remove is not empty.",
-                &["Delete all files and subdirectories within the directory before attempting to remove it."],
+                &[
+                    "Delete all files and subdirectories within the directory before attempting to remove it.",
+                ],
             ),
             _ => wrap_system(
                 err,
                 "An internal error occurred which we could not recover from.",
-                &["Please read the internal error below and decide if there is something you can do to fix the problem, or report it to us on GitHub."],
+                &[
+                    "Please read the internal error below and decide if there is something you can do to fix the problem, or report it to us on GitHub.",
+                ],
             ),
         }
     }

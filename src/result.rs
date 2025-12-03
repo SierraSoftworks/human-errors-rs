@@ -12,18 +12,18 @@ use super::*;
 /// // Converts any error into a user-caused error with the provided advice.
 /// "0.not a number".parse::<i32>()
 ///     .map_err_as_user(&["Please provide a valid integer input."]);
-/// 
+///
 /// // Converts any error into a system-caused error with the provided advice.
 /// "0.not a number".parse::<i32>()
 ///     .map_err_as_system(&["Please check your system configuration."]);
-/// 
+///
 /// // Wraps any error into a user-caused error with a custom message and advice.
 /// "0.not a number".parse::<i32>()
 ///     .wrap_err_as_user(
 ///         "Failed to parse the provided input as an integer.",
 ///         &["Please provide a valid integer input."],
 ///     );
-/// 
+///
 /// // Wraps any error into a system-caused error with a custom message and advice.
 /// "0.not a number".parse::<i32>()
 ///     .wrap_err_as_system(
@@ -34,11 +34,11 @@ use super::*;
 pub trait ResultExt<T> {
     /// Converts a `Result<T, E>` into a `Result<T, Error>`, wrapping any
     /// error in a user-facing error with the provided advice.
-    /// 
+    ///
     /// # Examples
     /// ```
     /// use human_errors::ResultExt;
-    /// 
+    ///
     /// "0.not a number".parse::<i32>()
     ///     .map_err_as_user(&["Please provide a valid integer input."]);
     /// ```
@@ -46,11 +46,11 @@ pub trait ResultExt<T> {
 
     /// Converts a `Result<T, E>` into a `Result<T, Error>`, wrapping any
     /// error in a user-facing error with the provided description and advice.
-    /// 
+    ///
     /// # Examples
     /// ```
     /// use human_errors::ResultExt;
-    /// 
+    ///
     /// "0.not a number".parse::<i32>()
     ///     .wrap_err_as_user(
     ///         "Failed to parse the provided input as an integer.",
@@ -65,11 +65,11 @@ pub trait ResultExt<T> {
 
     /// Converts a `Result<T, E>` into a `Result<T, Error>`, wrapping any
     /// error in a system-facing error with the provided advice.
-    /// 
+    ///
     /// # Examples
     /// ```
     /// use human_errors::ResultExt;
-    /// 
+    ///
     /// "0.not a number".parse::<i32>()
     ///     .map_err_as_system(&["Please report this issue to the dev team."]);
     /// ```
@@ -80,7 +80,7 @@ pub trait ResultExt<T> {
     /// # Examples
     /// ```
     /// use human_errors::ResultExt;
-    /// 
+    ///
     /// "0.not a number".parse::<i32>()
     ///     .wrap_err_as_system(
     ///         "Failed to parse the provided input as an integer.",

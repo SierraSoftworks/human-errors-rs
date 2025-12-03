@@ -1,7 +1,7 @@
 use std::{error, fmt};
 
 /// The kind of error which occurred.
-/// 
+///
 /// Distinguishes between errors which were the result of user actions
 /// and those which were the result of system failures. Conceptually
 /// similar to HTTP status codes in that 4xx errors are user-caused
@@ -70,7 +70,7 @@ pub struct Error {
 
 impl Error {
     /// Constructs a new [Error].
-    /// 
+    ///
     /// # Examples
     /// ```
     /// use human_errors;
@@ -158,16 +158,23 @@ impl Error {
             (cause, advice) if !cause.is_empty() && !advice.is_empty() => {
                 format!(
                     "{}\n\nThis was caused by:\n - {}\n\nTo try and fix this, you can:\n - {}",
-                    hero_message, cause.join("\n - "), advice.join("\n - ")
+                    hero_message,
+                    cause.join("\n - "),
+                    advice.join("\n - ")
                 )
             }
             (cause, _) if !cause.is_empty() => {
-                format!("{}\n\nThis was caused by:\n - {}", hero_message, cause.join("\n - "))
+                format!(
+                    "{}\n\nThis was caused by:\n - {}",
+                    hero_message,
+                    cause.join("\n - ")
+                )
             }
             (_, advice) if !advice.is_empty() => {
                 format!(
                     "{}\n\nTo try and fix this, you can:\n - {}",
-                    hero_message, advice.join("\n - ")
+                    hero_message,
+                    advice.join("\n - ")
                 )
             }
             _ => hero_message,

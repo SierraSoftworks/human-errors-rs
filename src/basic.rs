@@ -16,11 +16,14 @@ use std::{borrow::Cow, fmt};
 /// ```
 pub fn basic<S: Into<Cow<'static, str>>>(message: S) -> impl std::error::Error {
     let message = message.into();
-    BasicInternalError { message, inner: None }
+    BasicInternalError {
+        message,
+        inner: None,
+    }
 }
 
 /// Wraps an existing error with a basic message.
-/// 
+///
 /// Generates a [std::error::Error] compatible error which wraps
 /// the provided inner error with the given message. Can be used
 /// as the internal error for a [crate::Error].
@@ -28,13 +31,16 @@ pub fn basic<S: Into<Cow<'static, str>>>(message: S) -> impl std::error::Error {
 /// # Examples
 /// ```
 /// use human_errors;
-/// 
+///
 /// human_errors::wrap(
 ///   "We could not open the config file you provided.",
 ///   human_errors::basic("ENOENT 2: No such file or directory")
 /// );
 /// ```
-pub fn wrap<S: Into<Cow<'static, str>>, E: Into<Box<dyn std::error::Error + Send + Sync + 'static>>>(
+pub fn wrap<
+    S: Into<Cow<'static, str>>,
+    E: Into<Box<dyn std::error::Error + Send + Sync + 'static>>,
+>(
     message: S,
     inner: E,
 ) -> impl std::error::Error {
