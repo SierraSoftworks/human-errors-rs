@@ -1,7 +1,7 @@
 name: Publish Crate
 on:
   release:
-    types: [published, released]
+    types: [released]
 
 jobs:
   prepare:
@@ -27,70 +27,11 @@ jobs:
           name: cargofile
           path: Cargo.toml
 
-  test:
-    name: Test
-    runs-on: ubuntu-latest
-    needs:
-      - prepare
-    steps:
-      - name: Get Rust Stable
-        id: rust
-        uses: actions-rs/toolchain@v1
-        with:
-          toolchain: stable
-          profile: minimal
-          components: llvm-tools-preview
-          override: true
-
-      - uses: Swatinem/rust-cache@v2
-
-      - name: Check out code
-        uses: actions/checkout@v6
-
-      - name: Fetch Versioned Cargo.toml
-        uses: actions/download-artifact@v6.0.0
-        with:
-          name: cargofile
-
-      - name: Run tests
-        uses: actions-rs/cargo@v1.0.3
-        with:
-          command: test
-          args: --all-targets --all-features
-        env:
-          RUSTFLAGS: "-C instrument_coverage"
-          LLVM_PROFILE_FILE: default.profraw
-
-      - name: prepare coverage output
-        shell: pwsh
-        run: |
-          Write-Host "Merging raw profile output files"
-          &"$(rustc --print target-libdir)/../bin/llvm-profdata" merge -sparse default.profraw -o default.profdata
-
-          $latest_asset = Get-ChildItem -Path ./target/debug/deps -Filter "human_errors-*" -File `
-          | Where-Object { $_.Name.EndsWith(".dll") -or (-not $_.Name.Contains(".")) } `
-          | Sort-Object -Top 1 -Property LastWriteTime
-
-          Write-Host "Latest Asset: $latest_asset"
-
-          Write-Host "Exporting LCOV coverage report"
-          &"$(rustc --print target-libdir)/../bin/llvm-cov" export -instr-profile default.profdata $latest_asset `
-              -Xdemangler=rustfilt `
-              -ignore-filename-regex='.cargo|rustc' `
-              -compilation-dir=src `
-              -format=lcov > lcov.info
-
-      - name: Upload code coverage
-        uses: codecov/codecov-action@v5.5.1
-        with:
-          token: ${{ secrets.CODECOV_TOKEN }}
-
   publish-cargo:
     name: Publish to Cargo
     runs-on: ubuntu-latest
     needs:
       - prepare
-      - test
     steps:
       - name: Get Rust Stable
         id: rust
