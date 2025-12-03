@@ -207,6 +207,9 @@ impl Error {
 
         advice.reverse();
 
+        let mut seen = std::collections::HashSet::new();
+        advice.retain(|item| seen.insert(*item));
+
         advice
     }
 
