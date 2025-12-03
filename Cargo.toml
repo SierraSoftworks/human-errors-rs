@@ -1,6 +1,6 @@
 [package]
 name = "human-errors"
-version = "0.1.0"
+version = "0.2.0"
 description = "An error library focused on providing your users with relevant advice for any problem."
 homepage = "https://sierrasoftworks.com/projects/human-errors"
 readme = "README.md"
