@@ -63,7 +63,7 @@ mod tests {
                 &["Avoid bad things happening in future"],
             )
             .message(),
-            "Oh no! Something bad happened.\n\nThis was caused by:\n - You got rate limited\n\nTo try and fix this, you can:\n - Avoid bad things happening in future"
+            "Something bad happened. (User error)\n\nThis was caused by:\n - You got rate limited\n\nTo try and fix this, you can:\n - Avoid bad things happening in future"
         );
 
         assert_eq!(
@@ -72,7 +72,7 @@ mod tests {
                 &["Avoid bad things happening in future"],
             )
             .message(),
-            "Whoops! Something bad happened. (This isn't your fault)\n\nThis was caused by:\n - You got rate limited\n\nTo try and fix this, you can:\n - Avoid bad things happening in future"
+            "Something bad happened. (System failure)\n\nThis was caused by:\n - You got rate limited\n\nTo try and fix this, you can:\n - Avoid bad things happening in future"
         );
     }
 }

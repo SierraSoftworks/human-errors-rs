@@ -206,3 +206,40 @@ impl fmt::Display for Error {
         write!(f, "{}", self.message())
     }
 }
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_basic_user_error() {
+        let err = Error::new(
+            "Something bad happened.",
+            Kind::User,
+            &["Avoid bad things happening in future"],
+        );
+
+        assert!(err.is(Kind::User));
+        assert_eq!(err.description(), "Something bad happened.");
+        assert_eq!(
+            err.message(),
+            "Something bad happened. (User error)\n\nTo try and fix this, you can:\n - Avoid bad things happening in future"
+        );
+    }
+
+    #[test]
+    fn test_basic_system_error() {
+        let err = Error::new(
+            "Something bad happened.",
+            Kind::System,
+            &["Avoid bad things happening in future"],
+        );
+
+        assert!(err.is(Kind::System));
+        assert_eq!(err.description(), "Something bad happened.");
+        assert_eq!(
+            err.message(),
+            "Something bad happened. (System failure)\n\nTo try and fix this, you can:\n - Avoid bad things happening in future"
+        );
+    }
+}
