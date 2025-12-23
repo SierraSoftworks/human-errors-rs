@@ -27,7 +27,7 @@ use human_errors::{Error, ResultExt};
 fn main() {
     match read_file() {
         Ok(content) => println!("{}", content),
-        Err(err) => eprintln!("{}", err),
+        Err(err) => eprintln!("{}", human_errors::pretty(err)),
     }
 }
 
@@ -125,4 +125,26 @@ fn read_file() -> Result<String, Error> {
         &["Check that the file exists and that you have permission to access it."]
     ))
 }
+```
+
+## Pretty Printing
+
+Errors produced by this library implement the `Display` trait to provide a
+human-friendly rendering of the error message and its advice. However, if you
+want to customize the rendering further, you can use the `pretty` function
+to get a pre-rendered string representation of the error.
+
+**NOTE**: By default, this function is the same as using the `Display` implementation,
+but when the `cli` feature is enabled, it will format the error using coloured output
+and unicode box-drawing characters for an improved terminal experience.
+
+```rust
+use human_errors;
+
+let err = human_errors::user(
+    "We could not connect to the database.",
+    &["Check that the database server is running.", "Verify your network connection."]
+);
+
+eprintln!("{}", human_errors::pretty(err));
 ```

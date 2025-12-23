@@ -2,10 +2,10 @@ use std::fmt::Display;
 
 use super::*;
 
-/// Print the given error to stdout using the appropriate renderer.
+/// Returns a displayable representation of the given error.
 ///
 /// Depending on whether the `cli` feature is enabled, this will
-/// either print a simple error message or a more complex,
+/// either present a simple error message or a more complex,
 /// formatted error message suitable for CLI applications.
 ///
 /// # Examples
@@ -17,35 +17,21 @@ use super::*;
 ///   &["Make sure that the file exists and is readable by the application."],
 /// );
 ///
-/// human_errors::println(&err);
+/// println!("{}", human_errors::pretty(&err));
 /// ```
-pub fn println(err: &Error) {
-    println!("{}", Renderer { error: err })
-}
+pub fn pretty(err: &Error) -> impl Display {
+    Renderer {
+        error: err,
 
-/// Print the given error to stderr using the appropriate renderer.
-///
-/// Depending on whether the `cli` feature is enabled, this will
-/// either print a simple error message or a more complex,
-/// formatted error message suitable for CLI applications.
-///
-/// # Examples
-/// ```no_run
-/// use human_errors;
-///
-/// let err = human_errors::user(
-///   "We could not open the config file you provided.",
-///   &["Make sure that the file exists and is readable by the application."],
-/// );
-///
-/// human_errors::eprintln(&err);
-/// ```
-pub fn eprintln(err: &Error) {
-    eprintln!("{}", Renderer { error: err })
+        #[cfg(feature = "cli")]
+        width: 80
+    }
 }
 
 struct Renderer<'a> {
     error: &'a Error,
+    #[cfg(feature = "cli")]
+    width: usize,
 }
 
 impl Display for Renderer<'_> {
@@ -60,13 +46,11 @@ impl Display for Renderer<'_> {
             use colored::Colorize;
             use std::error::Error;
 
-            const WIDTH: usize = 80;
-
             write!(f, "error({}):    ", format_kind(&self.error.kind))?;
             write_wrapped(
                 f,
                 self.error.description(),
-                WIDTH - 14,
+                self.width - 14,
                 ("", ""),
                 (&format!("{}{}", "│".bright_black(), " ".repeat(14)), ""),
             )?;
@@ -97,7 +81,7 @@ impl Display for Renderer<'_> {
                 write_wrapped(
                     f,
                     description,
-                    WIDTH - 14,
+                    self.width - 14,
                     ("".bright_black().as_ref(), ""),
                     (
                         &format!("{}{}", "│".bright_black(), " ".repeat(13)).bright_black(),
@@ -115,7 +99,7 @@ impl Display for Renderer<'_> {
                     "Advice",
                     format!(" • {}", advice.join("\n • ")),
                     cli_boxes::BoxChars::ROUND,
-                    WIDTH,
+                    self.width,
                 )?;
             }
 
@@ -230,12 +214,10 @@ mod tests {
             &["Avoid bad things happening in future"],
         );
 
-        let user_rendered = format!("{}", Renderer { error: &user_error });
+        let user_rendered = format!("{}", pretty(&user_error));
         let system_rendered = format!(
             "{}",
-            Renderer {
-                error: &system_error
-            }
+            pretty(&system_error)
         );
 
         println!("{}", user_rendered);
@@ -263,7 +245,7 @@ mod tests {
             &["Check your configuration settings."],
         );
 
-        let rendered = format!("{}", Renderer { error: &root_error });
+        let rendered = format!("{}", pretty(&root_error));
 
         println!("{}", rendered);
 
