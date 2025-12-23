@@ -1,45 +1,8 @@
+use super::Kind;
 use std::{error, fmt};
 
-/// The kind of error which occurred.
-///
-/// Distinguishes between errors which were the result of user actions
-/// and those which were the result of system failures. Conceptually
-/// similar to HTTP status codes in that 4xx errors are user-caused
-/// and 5xx errors are system-caused.
-#[derive(Debug, PartialEq, Eq)]
-pub enum Kind {
-    /// An error which was the result of actions that the user took.
-    ///
-    /// These errors are usually things which a user can easily resolve by
-    /// changing how they interact with the system. Advice should be used
-    /// to guide the user to the correct interaction paths and help them
-    /// self-mitigate without needing to open support tickets.
-    ///
-    /// These errors are usually generated with [`crate::user`], [`crate::user_with_cause`]
-    /// and [`crate::user_with_internal`].
-    User,
-
-    /// An error which was the result of the system failing rather than the user's actions.
-    ///
-    /// These kinds of issues are usually the result of the system entering
-    /// an unexpected state and/or violating an assumption on behalf of the
-    /// developer. Often these issues cannot be resolved by the user directly,
-    /// so the advice should guide them to the best way to raise a bug with you
-    /// and provide you with information to help them fix the issue.
-    ///
-    /// These errors are usually generated with [`crate::system`], [`crate::system_with_cause`]
-    /// and [`crate::system_with_internal`].
-    System,
-}
-
-impl Kind {
-    fn format_description(&self, description: &str) -> String {
-        match self {
-            Kind::User => format!("Oh no! {description}"),
-            Kind::System => format!("Whoops! {description} (This isn't your fault)"),
-        }
-    }
-}
+#[cfg(feature = "serde")]
+use serde::ser::SerializeStruct;
 
 /// The fundamental error type used by this library.
 ///
@@ -63,9 +26,9 @@ impl Kind {
 /// ```
 #[derive(Debug)]
 pub struct Error {
-    kind: Kind,
-    error: Box<dyn error::Error + Send + Sync>,
-    advice: &'static [&'static str],
+    pub(crate) kind: Kind,
+    pub(crate) error: Box<dyn error::Error + Send + Sync>,
+    pub(crate) advice: &'static [&'static str],
 }
 
 impl Error {
@@ -92,6 +55,27 @@ impl Error {
         }
     }
 
+    /// Checks if this error is of a specific kind.
+    ///
+    /// Returns `true` if this error matches the provided [Kind],
+    /// otherwise `false`.
+    ///
+    /// # Examples
+    /// ```
+    /// use human_errors;
+    ///
+    /// let err = human_errors::user(
+    ///   "We could not open the config file you provided.",
+    ///   &["Make sure that the file exists and is readable by the application."],
+    /// );
+    ///
+    /// // Prints "is_user?: true"
+    /// println!("is_user?: {}", err.is(human_errors::Kind::User));
+    /// ```
+    pub fn is(&self, kind: Kind) -> bool {
+        self.kind == kind
+    }
+
     /// Gets the description message from this error.
     ///
     /// Gets the description which was provided as the first argument when constructing
@@ -114,6 +98,52 @@ impl Error {
             Some(err) => err.description(),
             None => format!("{}", self.error),
         }
+    }
+
+    /// Gets the advice associated with this error and its causes.
+    ///
+    /// Gathers all advice from this error and any causal errors it wraps,
+    /// returning a deduplicated list of suggestions for how a user should
+    /// deal with this error.
+    ///
+    /// # Examples
+    /// ```
+    /// use human_errors;
+    ///
+    /// let err = human_errors::wrap_user(
+    ///   human_errors::user(
+    ///     "We could not find a file at /home/user/.config/demo.yml",
+    ///     &["Make sure that the file exists and is readable by the application."]
+    ///   ),
+    ///   "We could not open the config file you provided.",
+    ///   &["Make sure that you've specified a valid config file with the --config option."],
+    /// );
+    ///
+    /// // Prints:
+    /// // - Make sure that the file exists and is readable by the application.
+    /// // - Make sure that you've specified a valid config file with the --config option.
+    /// for tip in err.advice() {
+    ///     println!("- {}", tip);
+    /// }
+    /// ``````
+    pub fn advice(&self) -> Vec<&'static str> {
+        let mut advice = self.advice.to_vec();
+
+        let mut cause: Option<&(dyn std::error::Error + 'static)> = Some(self.error.as_ref());
+        while let Some(err) = cause {
+            if let Some(err) = err.downcast_ref::<Error>() {
+                advice.extend_from_slice(err.advice);
+            }
+
+            cause = err.source();
+        }
+
+        advice.reverse();
+
+        let mut seen = std::collections::HashSet::new();
+        advice.retain(|item| seen.insert(*item));
+
+        advice
     }
 
     /// Gets the formatted error and its advice.
@@ -139,7 +169,7 @@ impl Error {
     /// );
     ///
     /// // Prints a message like the following:
-    /// // Oh no! We could not open the config file you provided.
+    /// // We could not open the config file you provided. (User error)
     /// //
     /// // This was caused by:
     /// // We could not find a file at /home/user/.config/demo.yml
@@ -195,44 +225,6 @@ impl Error {
 
         causes
     }
-
-    fn advice(&self) -> Vec<&'static str> {
-        let mut advice = self.advice.to_vec();
-
-        let mut cause = self.error.as_ref();
-        while let Some(err) = cause.downcast_ref::<Error>() {
-            advice.extend_from_slice(err.advice);
-            cause = err.error.as_ref();
-        }
-
-        advice.reverse();
-
-        let mut seen = std::collections::HashSet::new();
-        advice.retain(|item| seen.insert(*item));
-
-        advice
-    }
-
-    /// Checks if this error is of a specific kind.
-    ///
-    /// Returns `true` if this error matches the provided [Kind],
-    /// otherwise `false`.
-    ///
-    /// # Examples
-    /// ```
-    /// use human_errors;
-    ///
-    /// let err = human_errors::user(
-    ///   "We could not open the config file you provided.",
-    ///   &["Make sure that the file exists and is readable by the application."],
-    /// );
-    ///
-    /// // Prints "is_user?: true"
-    /// println!("is_user?: {}", err.is(human_errors::Kind::User));
-    /// ```
-    pub fn is(&self, kind: Kind) -> bool {
-        self.kind == kind
-    }
 }
 
 impl error::Error for Error {
@@ -244,5 +236,76 @@ impl error::Error for Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.message())
+    }
+}
+
+#[cfg(feature = "serde")]
+impl serde::Serialize for Error {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let mut state = serializer.serialize_struct("Error", 3)?;
+        state.serialize_field("kind", &self.kind)?;
+        state.serialize_field("description", &self.description())?;
+        state.serialize_field("advice", &self.advice())?;
+        state.end()
+    }
+}
+
+#[cfg(test)]
+mod tests {
+    use super::*;
+
+    #[test]
+    fn test_basic_user_error() {
+        let err = Error::new(
+            "Something bad happened.",
+            Kind::User,
+            &["Avoid bad things happening in future"],
+        );
+
+        assert!(err.is(Kind::User));
+        assert_eq!(err.description(), "Something bad happened.");
+        assert_eq!(
+            err.message(),
+            "Something bad happened. (User error)\n\nTo try and fix this, you can:\n - Avoid bad things happening in future"
+        );
+    }
+
+    #[test]
+    fn test_basic_system_error() {
+        let err = Error::new(
+            "Something bad happened.",
+            Kind::System,
+            &["Avoid bad things happening in future"],
+        );
+
+        assert!(err.is(Kind::System));
+        assert_eq!(err.description(), "Something bad happened.");
+        assert_eq!(
+            err.message(),
+            "Something bad happened. (System failure)\n\nTo try and fix this, you can:\n - Avoid bad things happening in future"
+        );
+    }
+
+    #[test]
+    fn test_advice_aggregation() {
+        let low_level_err = Error::new(
+            "Low-level failure.",
+            Kind::System,
+            &["Check low-level systems"],
+        );
+
+        let high_level_err = Error::new(
+            low_level_err,
+            Kind::User,
+            &["Check high-level configuration"],
+        );
+
+        assert_eq!(
+            high_level_err.advice(),
+            vec!["Check low-level systems", "Check high-level configuration"]
+        );
     }
 }

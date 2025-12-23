@@ -126,3 +126,22 @@ fn read_file() -> Result<String, Error> {
     ))
 }
 ```
+
+## Pretty Printing
+
+Errors produced by this library implement the `Display` trait to provide a
+human-friendly rendering of the error message and its advice. However, if you
+want to customize the rendering further, you can use the `pretty` feature
+which enables you to use the `pretty` function to format errors in a nice,
+human-readable, way.
+
+```rust
+use human_errors;
+
+let err = human_errors::user(
+    "We could not connect to the database.",
+    &["Check that the database server is running.", "Verify your network connection."]
+);
+
+eprintln!("{}", human_errors::pretty(err));
+```

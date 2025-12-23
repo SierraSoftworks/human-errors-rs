@@ -8,10 +8,16 @@
 mod error;
 mod from;
 mod helpers;
+mod kind;
+#[cfg(feature = "pretty")]
+mod pretty;
 mod result;
 mod wrapper;
 
 pub use error::*;
 pub use helpers::*;
+pub use kind::*;
+#[cfg(feature = "pretty")]
+pub use pretty::*;
 pub use result::ResultExt;
 pub use wrapper::*;
