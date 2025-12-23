@@ -21,5 +21,5 @@ textwrap = { version = "0.16.2", optional = true }
 
 [features]
 default = []
-cli = ["dep:cli-boxes", "dep:colored", "dep:textwrap"]
+pretty = ["dep:cli-boxes", "dep:colored", "dep:textwrap"]
 serde = ["dep:serde"]

@@ -22,27 +22,17 @@ use super::*;
 pub fn pretty(err: &Error) -> impl Display {
     Renderer {
         error: err,
-
-        #[cfg(feature = "cli")]
         width: 80
     }
 }
 
 struct Renderer<'a> {
     error: &'a Error,
-    #[cfg(feature = "cli")]
     width: usize,
 }
 
 impl Display for Renderer<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-        #[cfg(not(feature = "cli"))]
-        {
-            write!(f, "{}", self.error)
-        }
-
-        #[cfg(feature = "cli")]
-        {
             use colored::Colorize;
             use std::error::Error;
 
@@ -105,10 +95,8 @@ impl Display for Renderer<'_> {
 
             Ok(())
         }
-    }
 }
 
-#[cfg(feature = "cli")]
 fn format_kind(kind: &Kind) -> colored::ColoredString {
     use colored::Colorize;
 
@@ -118,7 +106,6 @@ fn format_kind(kind: &Kind) -> colored::ColoredString {
     }
 }
 
-#[cfg(feature = "cli")]
 fn write_wrapped<D: Display + Copy>(
     f: &mut std::fmt::Formatter<'_>,
     content: impl AsRef<str>,
@@ -149,7 +136,6 @@ fn write_wrapped<D: Display + Copy>(
     Ok(())
 }
 
-#[cfg(feature = "cli")]
 fn write_box(
     f: &mut std::fmt::Formatter<'_>,
     title: &str,

@@ -9,13 +9,15 @@ mod error;
 mod from;
 mod helpers;
 mod kind;
-mod renderer;
+#[cfg(feature = "pretty")]
+mod pretty;
 mod result;
 mod wrapper;
 
 pub use error::*;
 pub use helpers::*;
 pub use kind::*;
-pub use renderer::*;
+#[cfg(feature = "pretty")]
+pub use pretty::*;
 pub use result::ResultExt;
 pub use wrapper::*;
