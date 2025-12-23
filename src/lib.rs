@@ -8,10 +8,12 @@
 mod error;
 mod from;
 mod helpers;
+mod kind;
 mod result;
 mod wrapper;
 
 pub use error::*;
 pub use helpers::*;
+pub use kind::*;
 pub use result::ResultExt;
 pub use wrapper::*;
