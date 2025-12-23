@@ -3,20 +3,20 @@ use std::fmt::Display;
 use super::*;
 
 /// Print the given error to stdout using the appropriate renderer.
-/// 
+///
 /// Depending on whether the `cli` feature is enabled, this will
 /// either print a simple error message or a more complex,
 /// formatted error message suitable for CLI applications.
-/// 
+///
 /// # Examples
 /// ```no_run
 /// use human_errors;
-/// 
+///
 /// let err = human_errors::user(
 ///   "We could not open the config file you provided.",
 ///   &["Make sure that the file exists and is readable by the application."],
 /// );
-/// 
+///
 /// human_errors::println(&err);
 /// ```
 pub fn println(err: &Error) {
@@ -24,20 +24,20 @@ pub fn println(err: &Error) {
 }
 
 /// Print the given error to stderr using the appropriate renderer.
-/// 
+///
 /// Depending on whether the `cli` feature is enabled, this will
 /// either print a simple error message or a more complex,
 /// formatted error message suitable for CLI applications.
-/// 
+///
 /// # Examples
 /// ```no_run
 /// use human_errors;
-/// 
+///
 /// let err = human_errors::user(
 ///   "We could not open the config file you provided.",
 ///   &["Make sure that the file exists and is readable by the application."],
 /// );
-/// 
+///
 /// human_errors::eprintln(&err);
 /// ```
 pub fn eprintln(err: &Error) {
@@ -51,51 +51,78 @@ struct Renderer<'a> {
 impl Display for Renderer<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
         #[cfg(not(feature = "cli"))]
-    {
-        write!(f, "{}", self.error)
-    }
-
-    #[cfg(feature = "cli")]
-    {
-        use std::error::Error;
-        use colored::Colorize;
-
-        const WIDTH: usize = 80;
-
-        write!(f, "error({}):    ", format_kind(&self.error.kind))?;
-        write_wrapped(f, self.error.description(), WIDTH - 14, ("", ""), (&format!("{}{}", "│".bright_black(), " ".repeat(14)), ""))?;
-
-        let mut source  = self.error.source();
-        while let Some(cause) = source {
-            writeln!(f, "{}", "│".bright_black())?;
-            
-            source = cause.source();
-            let prefix = if source.is_some() { "├─" } else { "╰─" };
-            let description = if let Some(err) = cause.downcast_ref::<super::Error>() {
-                write!(f, "{} cause({}): ", prefix.bright_black(), format_kind(&err.kind))?;
-                err.description()
-            } else {
-                write!(f, "{}{} cause: ", prefix.bright_black(), "─".repeat(5).bright_black())?;
-                cause.to_string()
-            };
-            write_wrapped(f, description, WIDTH - 14, ("".bright_black().as_ref(), ""), (&format!("{}{}", "│".bright_black(), " ".repeat(13)).bright_black().as_ref(), ""))?;
+        {
+            write!(f, "{}", self.error)
         }
 
-        let advice = self.error.advice();
+        #[cfg(feature = "cli")]
+        {
+            use colored::Colorize;
+            use std::error::Error;
 
-        if !advice.is_empty() {
-            writeln!(f)?;
-            write_box(
+            const WIDTH: usize = 80;
+
+            write!(f, "error({}):    ", format_kind(&self.error.kind))?;
+            write_wrapped(
                 f,
-                "Advice",
-                format!(" • {}", advice.join("\n • ")),
-                cli_boxes::BoxChars::ROUND,
-                WIDTH
+                self.error.description(),
+                WIDTH - 14,
+                ("", ""),
+                (&format!("{}{}", "│".bright_black(), " ".repeat(14)), ""),
             )?;
-        }
 
-        Ok(())
-    }
+            let mut source = self.error.source();
+            while let Some(cause) = source {
+                writeln!(f, "{}", "│".bright_black())?;
+
+                source = cause.source();
+                let prefix = if source.is_some() { "├─" } else { "╰─" };
+                let description = if let Some(err) = cause.downcast_ref::<super::Error>() {
+                    write!(
+                        f,
+                        "{} cause({}): ",
+                        prefix.bright_black(),
+                        format_kind(&err.kind)
+                    )?;
+                    err.description()
+                } else {
+                    write!(
+                        f,
+                        "{}{} cause: ",
+                        prefix.bright_black(),
+                        "─".repeat(5).bright_black()
+                    )?;
+                    cause.to_string()
+                };
+                write_wrapped(
+                    f,
+                    description,
+                    WIDTH - 14,
+                    ("".bright_black().as_ref(), ""),
+                    (
+                        &format!("{}{}", "│".bright_black(), " ".repeat(13))
+                            .bright_black()
+                            .as_ref(),
+                        "",
+                    ),
+                )?;
+            }
+
+            let advice = self.error.advice();
+
+            if !advice.is_empty() {
+                writeln!(f)?;
+                write_box(
+                    f,
+                    "Advice",
+                    format!(" • {}", advice.join("\n • ")),
+                    cli_boxes::BoxChars::ROUND,
+                    WIDTH,
+                )?;
+            }
+
+            Ok(())
+        }
     }
 }
 
@@ -127,7 +154,14 @@ fn write_wrapped<D: Display + Copy>(
         } else {
             other_lines
         };
-        writeln!(f, "{}{}{}{}", prefix, chunk.bright_white(), " ".repeat(width.saturating_sub(chunk.len())), suffix)?;
+        writeln!(
+            f,
+            "{}{}{}{}",
+            prefix,
+            chunk.bright_white(),
+            " ".repeat(width.saturating_sub(chunk.len())),
+            suffix
+        )?;
     }
 
     Ok(())
@@ -144,7 +178,9 @@ fn write_box(
     use colored::Colorize;
 
     {
-        let title_padding = vec![box_chars.top; width - title.len() - 5].into_iter().collect::<String>();
+        let title_padding = vec![box_chars.top; width - title.len() - 5]
+            .into_iter()
+            .collect::<String>();
         writeln!(
             f,
             "{}{} {} {}{}",
@@ -157,17 +193,23 @@ fn write_box(
     }
 
     for line in content.as_ref().lines() {
-        write_wrapped(f, line, width, (&box_chars.left, &box_chars.right), (&box_chars.left, &box_chars.right))?;
+        write_wrapped(
+            f,
+            line,
+            width,
+            (&box_chars.left, &box_chars.right),
+            (&box_chars.left, &box_chars.right),
+        )?;
     }
 
     {
-        let bottom_padding = vec![box_chars.bottom; width - 2].into_iter().collect::<String>();
+        let bottom_padding = vec![box_chars.bottom; width - 2]
+            .into_iter()
+            .collect::<String>();
         writeln!(
             f,
             "{}{}{}",
-            box_chars.bottom_left,
-            bottom_padding,
-            box_chars.bottom_right,
+            box_chars.bottom_left, bottom_padding, box_chars.bottom_right,
         )?;
     }
 
@@ -191,13 +233,18 @@ mod tests {
         );
 
         let user_rendered = format!("{}", Renderer { error: &user_error });
-        let system_rendered = format!("{}", Renderer { error: &system_error });
+        let system_rendered = format!(
+            "{}",
+            Renderer {
+                error: &system_error
+            }
+        );
 
         println!("{}", user_rendered);
-        
+
         assert!(user_rendered.contains("Something bad happened."));
         assert!(user_rendered.contains("Avoid bad things happening in future"));
-        
+
         println!("{}", system_rendered);
         assert!(system_rendered.contains("Something bad happened."));
         assert!(system_rendered.contains("Avoid bad things happening in future"));
@@ -205,7 +252,8 @@ mod tests {
 
     #[test]
     fn test_renderer_with_cause() {
-        let underlying_error = std::io::Error::new(std::io::ErrorKind::Other, "underlying IO error");
+        let underlying_error =
+            std::io::Error::new(std::io::ErrorKind::Other, "underlying IO error");
         let wrapped_error = wrap_user(
             underlying_error,
             "Failed to read configuration file.",

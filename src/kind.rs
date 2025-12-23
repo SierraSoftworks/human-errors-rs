@@ -1,4 +1,3 @@
-
 /// The kind of error which occurred.
 ///
 /// Distinguishes between errors which were the result of user actions

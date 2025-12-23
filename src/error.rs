@@ -1,5 +1,5 @@
-use std::{error, fmt};
 use super::Kind;
+use std::{error, fmt};
 
 #[cfg(feature = "serde")]
 use serde::ser::SerializeStruct;
@@ -101,15 +101,15 @@ impl Error {
     }
 
     /// Gets the advice associated with this error and its causes.
-    /// 
+    ///
     /// Gathers all advice from this error and any causal errors it wraps,
     /// returning a deduplicated list of suggestions for how a user should
     /// deal with this error.
-    /// 
+    ///
     /// # Examples
     /// ```
     /// use human_errors;
-    /// 
+    ///
     /// let err = human_errors::wrap_user(
     ///   human_errors::user(
     ///     "We could not find a file at /home/user/.config/demo.yml",
@@ -118,7 +118,7 @@ impl Error {
     ///   "We could not open the config file you provided.",
     ///   &["Make sure that you've specified a valid config file with the --config option."],
     /// );
-    /// 
+    ///
     /// // Prints:
     /// // - Make sure that the file exists and is readable by the application.
     /// // - Make sure that you've specified a valid config file with the --config option.
@@ -134,7 +134,7 @@ impl Error {
             if let Some(err) = err.downcast_ref::<Error>() {
                 advice.extend_from_slice(err.advice);
             }
-            
+
             cause = err.source();
         }
 
