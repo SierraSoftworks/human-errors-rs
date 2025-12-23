@@ -9,11 +9,13 @@ mod error;
 mod from;
 mod helpers;
 mod kind;
+mod renderer;
 mod result;
 mod wrapper;
 
 pub use error::*;
 pub use helpers::*;
 pub use kind::*;
+pub use renderer::*;
 pub use result::ResultExt;
 pub use wrapper::*;

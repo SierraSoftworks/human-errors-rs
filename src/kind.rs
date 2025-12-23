@@ -39,3 +39,16 @@ impl Kind {
         }
     }
 }
+
+#[cfg(feature = "serde")]
+impl serde::Serialize for Kind {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        match self {
+            Kind::User => serializer.serialize_str("User"),
+            Kind::System => serializer.serialize_str("System"),
+        }
+    }
+}

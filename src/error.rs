@@ -1,6 +1,9 @@
 use std::{error, fmt};
 use super::Kind;
 
+#[cfg(feature = "serde")]
+use serde::ser::SerializeStruct;
+
 /// The fundamental error type used by this library.
 ///
 /// An error type which encapsulates information about whether an error
@@ -23,9 +26,9 @@ use super::Kind;
 /// ```
 #[derive(Debug)]
 pub struct Error {
-    kind: Kind,
-    error: Box<dyn error::Error + Send + Sync>,
-    advice: &'static [&'static str],
+    pub(crate) kind: Kind,
+    pub(crate) error: Box<dyn error::Error + Send + Sync>,
+    pub(crate) advice: &'static [&'static str],
 }
 
 impl Error {
@@ -97,6 +100,52 @@ impl Error {
         }
     }
 
+    /// Gets the advice associated with this error and its causes.
+    /// 
+    /// Gathers all advice from this error and any causal errors it wraps,
+    /// returning a deduplicated list of suggestions for how a user should
+    /// deal with this error.
+    /// 
+    /// # Examples
+    /// ```
+    /// use human_errors;
+    /// 
+    /// let err = human_errors::wrap_user(
+    ///   human_errors::user(
+    ///     "We could not find a file at /home/user/.config/demo.yml",
+    ///     &["Make sure that the file exists and is readable by the application."]
+    ///   ),
+    ///   "We could not open the config file you provided.",
+    ///   &["Make sure that you've specified a valid config file with the --config option."],
+    /// );
+    /// 
+    /// // Prints:
+    /// // - Make sure that the file exists and is readable by the application.
+    /// // - Make sure that you've specified a valid config file with the --config option.
+    /// for tip in err.advice() {
+    ///     println!("- {}", tip);
+    /// }
+    /// ``````
+    pub fn advice(&self) -> Vec<&'static str> {
+        let mut advice = self.advice.to_vec();
+
+        let mut cause: Option<&(dyn std::error::Error + 'static)> = Some(self.error.as_ref());
+        while let Some(err) = cause {
+            if let Some(err) = err.downcast_ref::<Error>() {
+                advice.extend_from_slice(err.advice);
+            }
+            
+            cause = err.source();
+        }
+
+        advice.reverse();
+
+        let mut seen = std::collections::HashSet::new();
+        advice.retain(|item| seen.insert(*item));
+
+        advice
+    }
+
     /// Gets the formatted error and its advice.
     ///
     /// Generates a string containing the description of the error and any causes,
@@ -120,7 +169,7 @@ impl Error {
     /// );
     ///
     /// // Prints a message like the following:
-    /// // Oh no! We could not open the config file you provided.
+    /// // We could not open the config file you provided. (User error)
     /// //
     /// // This was caused by:
     /// // We could not find a file at /home/user/.config/demo.yml
@@ -176,23 +225,6 @@ impl Error {
 
         causes
     }
-
-    fn advice(&self) -> Vec<&'static str> {
-        let mut advice = self.advice.to_vec();
-
-        let mut cause = self.error.as_ref();
-        while let Some(err) = cause.downcast_ref::<Error>() {
-            advice.extend_from_slice(err.advice);
-            cause = err.error.as_ref();
-        }
-
-        advice.reverse();
-
-        let mut seen = std::collections::HashSet::new();
-        advice.retain(|item| seen.insert(*item));
-
-        advice
-    }
 }
 
 impl error::Error for Error {
@@ -204,6 +236,20 @@ impl error::Error for Error {
 impl fmt::Display for Error {
     fn fmt(&self, f: &mut fmt::Formatter<'_>) -> fmt::Result {
         write!(f, "{}", self.message())
+    }
+}
+
+#[cfg(feature = "serde")]
+impl serde::Serialize for Error {
+    fn serialize<S>(&self, serializer: S) -> Result<S::Ok, S::Error>
+    where
+        S: serde::Serializer,
+    {
+        let mut state = serializer.serialize_struct("Error", 3)?;
+        state.serialize_field("kind", &self.kind)?;
+        state.serialize_field("description", &self.description())?;
+        state.serialize_field("advice", &self.advice())?;
+        state.end()
     }
 }
 
@@ -240,6 +286,26 @@ mod tests {
         assert_eq!(
             err.message(),
             "Something bad happened. (System failure)\n\nTo try and fix this, you can:\n - Avoid bad things happening in future"
+        );
+    }
+
+    #[test]
+    fn test_advice_aggregation() {
+        let low_level_err = Error::new(
+            "Low-level failure.",
+            Kind::System,
+            &["Check low-level systems"],
+        );
+
+        let high_level_err = Error::new(
+            low_level_err,
+            Kind::User,
+            &["Check high-level configuration"],
+        );
+
+        assert_eq!(
+            high_level_err.advice(),
+            vec!["Check low-level systems", "Check high-level configuration"]
         );
     }
 }
