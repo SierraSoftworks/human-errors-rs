@@ -22,7 +22,7 @@ use super::*;
 pub fn pretty(err: &Error) -> impl Display {
     Renderer {
         error: err,
-        width: 80
+        width: 80,
     }
 }
 
@@ -33,68 +33,68 @@ struct Renderer<'a> {
 
 impl Display for Renderer<'_> {
     fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
-            use colored::Colorize;
-            use std::error::Error;
+        use colored::Colorize;
+        use std::error::Error;
 
-            write!(f, "error({}):    ", format_kind(&self.error.kind))?;
+        write!(f, "error({}):    ", format_kind(&self.error.kind))?;
+        write_wrapped(
+            f,
+            self.error.description(),
+            self.width - 14,
+            ("", ""),
+            (&format!("{}{}", "│".bright_black(), " ".repeat(14)), ""),
+        )?;
+
+        let mut source = self.error.source();
+        while let Some(cause) = source {
+            writeln!(f, "{}", "│".bright_black())?;
+
+            source = cause.source();
+            let prefix = if source.is_some() { "├─" } else { "╰─" };
+            let description = if let Some(err) = cause.downcast_ref::<super::Error>() {
+                write!(
+                    f,
+                    "{} cause({}): ",
+                    prefix.bright_black(),
+                    format_kind(&err.kind)
+                )?;
+                err.description()
+            } else {
+                write!(
+                    f,
+                    "{}{} cause: ",
+                    prefix.bright_black(),
+                    "─".repeat(5).bright_black()
+                )?;
+                cause.to_string()
+            };
             write_wrapped(
                 f,
-                self.error.description(),
+                description,
                 self.width - 14,
-                ("", ""),
-                (&format!("{}{}", "│".bright_black(), " ".repeat(14)), ""),
+                ("".bright_black().as_ref(), ""),
+                (
+                    &format!("{}{}", "│".bright_black(), " ".repeat(13)).bright_black(),
+                    "",
+                ),
             )?;
-
-            let mut source = self.error.source();
-            while let Some(cause) = source {
-                writeln!(f, "{}", "│".bright_black())?;
-
-                source = cause.source();
-                let prefix = if source.is_some() { "├─" } else { "╰─" };
-                let description = if let Some(err) = cause.downcast_ref::<super::Error>() {
-                    write!(
-                        f,
-                        "{} cause({}): ",
-                        prefix.bright_black(),
-                        format_kind(&err.kind)
-                    )?;
-                    err.description()
-                } else {
-                    write!(
-                        f,
-                        "{}{} cause: ",
-                        prefix.bright_black(),
-                        "─".repeat(5).bright_black()
-                    )?;
-                    cause.to_string()
-                };
-                write_wrapped(
-                    f,
-                    description,
-                    self.width - 14,
-                    ("".bright_black().as_ref(), ""),
-                    (
-                        &format!("{}{}", "│".bright_black(), " ".repeat(13)).bright_black(),
-                        "",
-                    ),
-                )?;
-            }
-
-            let advice = self.error.advice();
-
-            if !advice.is_empty() {
-                writeln!(f)?;
-                write_box(
-                    f,
-                    "Advice",
-                    format!(" • {}", advice.join("\n • ")),
-                    cli_boxes::BoxChars::ROUND,
-                    self.width,
-                )?;
-            }
-
-            Ok(())
         }
+
+        let advice = self.error.advice();
+
+        if !advice.is_empty() {
+            writeln!(f)?;
+            write_box(
+                f,
+                "Advice",
+                format!(" • {}", advice.join("\n • ")),
+                cli_boxes::BoxChars::ROUND,
+                self.width,
+            )?;
+        }
+
+        Ok(())
+    }
 }
 
 fn format_kind(kind: &Kind) -> colored::ColoredString {
@@ -201,10 +201,7 @@ mod tests {
         );
 
         let user_rendered = format!("{}", pretty(&user_error));
-        let system_rendered = format!(
-            "{}",
-            pretty(&system_error)
-        );
+        let system_rendered = format!("{}", pretty(&system_error));
 
         println!("{}", user_rendered);
 
