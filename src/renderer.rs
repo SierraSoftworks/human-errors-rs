@@ -100,9 +100,7 @@ impl Display for Renderer<'_> {
                     WIDTH - 14,
                     ("".bright_black().as_ref(), ""),
                     (
-                        &format!("{}{}", "│".bright_black(), " ".repeat(13))
-                            .bright_black()
-                            .as_ref(),
+                        &format!("{}{}", "│".bright_black(), " ".repeat(13)).bright_black(),
                         "",
                     ),
                 )?;
@@ -252,8 +250,7 @@ mod tests {
 
     #[test]
     fn test_renderer_with_cause() {
-        let underlying_error =
-            std::io::Error::new(std::io::ErrorKind::Other, "underlying IO error");
+        let underlying_error = std::io::Error::other("underlying IO error");
         let wrapped_error = wrap_user(
             underlying_error,
             "Failed to read configuration file.",
