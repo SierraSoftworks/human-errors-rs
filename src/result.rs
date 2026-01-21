@@ -228,6 +228,8 @@ where
 
 #[cfg(test)]
 mod tests {
+    use std::error::Error;
+
     use super::*;
 
     #[test]
@@ -255,7 +257,7 @@ mod tests {
             .unwrap();
 
         assert!(user_error.is(Kind::User));
-        assert_eq!(user_error.message(), "Failed to process the input.");
+        assert_eq!(user_error.description(), "Failed to process the input.");
     }
 
     #[test]
@@ -281,6 +283,6 @@ mod tests {
             .err()
             .unwrap();
         assert!(system_error.is(Kind::System));
-        assert_eq!(system_error.message(), "Failed to process the input.");
+        assert_eq!(system_error.description(), "Failed to process the input.");
     }
 }

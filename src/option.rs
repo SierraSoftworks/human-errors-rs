@@ -101,7 +101,7 @@ mod tests {
             .ok_or_user_err("No value", &["Provide a value"])
             .unwrap_err();
         assert!(err.is(Kind::User));
-        assert_eq!(err.message(), "No value");
+        assert_eq!(err.description(), "No value");
     }
 
     #[test]
@@ -118,6 +118,6 @@ mod tests {
             .ok_or_system_err("No value", &["Check system"])
             .unwrap_err();
         assert!(err.is(Kind::System));
-        assert_eq!(err.message(), "No value");
+        assert_eq!(err.description(), "No value");
     }
 }
