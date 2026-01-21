@@ -65,11 +65,11 @@ pub trait ResultExt<T> {
 
     /// Converts a `Result<T, E>` into a `Result<T, Error>`, wrapping any
     /// error in a system-facing error with the provided advice.
-    /// 
+    ///
     /// # Examples
     /// ```
     /// use human_errors::ResultExt;
-    /// 
+    ///
     /// "0.not a number".parse::<i32>()
     ///    .or_system_err(&["Please report this issue to the dev team."]);
     /// ```
@@ -77,7 +77,7 @@ pub trait ResultExt<T> {
 
     /// Converts a `Result<T, E>` into a `Result<T, Error>`, wrapping any
     /// error in a system-facing error with the provided description and advice.
-    /// 
+    ///
     /// # Examples
     /// ```
     /// use human_errors::ResultExt;
@@ -151,7 +151,7 @@ pub trait ResultExt<T> {
 
     /// Converts a `Result<T, E>` into a `Result<T, Error>`, wrapping any
     /// error in a system-facing error with the provided description and advice.
-    /// 
+    ///
     /// # Examples
     /// ```
     /// use human_errors::ResultExt;
@@ -194,10 +194,10 @@ where
     }
 
     fn wrap_system_err<S: Into<Cow<'static, str>> + 'static>(
-            self,
-            message: S,
-            advice: &'static [&'static str],
-        ) -> Result<T, Error> {
+        self,
+        message: S,
+        advice: &'static [&'static str],
+    ) -> Result<T, Error> {
         self.map_err(|e| wrap_system(e, message, advice))
     }
 
