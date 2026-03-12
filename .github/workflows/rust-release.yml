@@ -47,7 +47,7 @@ jobs:
         uses: actions/checkout@v6
 
       - name: Fetch Versioned Cargo.toml
-        uses: actions/download-artifact@v8.0.0
+        uses: actions/download-artifact@v8.0.1
         with:
           name: cargofile
 
