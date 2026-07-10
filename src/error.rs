@@ -217,6 +217,42 @@ impl Error {
         }
     }
 
+    /// Gets the formatted error, its advice, and any captured backtraces.
+    ///
+    /// Behaves like [`Error::message`], but additionally appends the backtrace
+    /// captured for this error as well as the backtrace of each causal error
+    /// which recorded one. This is primarily useful when diagnosing system
+    /// failures, where the backtraces can help pinpoint where the problem
+    /// originated.
+    ///
+    /// Backtraces are only included when the `backtraces` (or `force_backtraces`)
+    /// feature is enabled and a backtrace was successfully captured (which
+    /// usually requires the `RUST_BACKTRACE` environment variable to be set).
+    /// When no backtraces are available, this method returns the same output as
+    /// [`Error::message`].
+    ///
+    /// # Examples
+    /// ```
+    /// use human_errors;
+    ///
+    /// let err = human_errors::system(
+    ///   "We could not connect to the database.",
+    ///   &["Check that the database is running and reachable."],
+    /// );
+    ///
+    /// // Prints the human-readable message followed by any captured backtraces.
+    /// println!("{}", err.message_with_backtrace());
+    /// ```
+    pub fn message_with_backtrace(&self) -> String {
+        let mut message = self.message();
+
+        for (description, backtrace) in self.backtraces() {
+            message.push_str(&format!("\n\nBacktrace ({description}):\n{backtrace}"));
+        }
+
+        message
+    }
+
     /// Gets the backtrace associated with this error, if available.
     ///
     /// Returns `Some` if the `backtraces` feature is enabled and a backtrace was captured when this error was created, otherwise returns `None`.
@@ -237,6 +273,39 @@ impl Error {
     /// }
     pub fn backtrace(&self) -> Option<&std::backtrace::Backtrace> {
         self.backtrace.as_ref()
+    }
+
+    /// Collects the captured backtraces for this error and its causal chain.
+    ///
+    /// Walks this error and each causal [`Error`] which recorded a backtrace,
+    /// pairing every captured backtrace with the description of the error it
+    /// belongs to. Errors without a successfully captured backtrace (for
+    /// example when the `backtraces` feature is disabled) are skipped.
+    pub(crate) fn backtraces(&self) -> Vec<(String, &std::backtrace::Backtrace)> {
+        let mut backtraces = Vec::new();
+
+        if let Some(backtrace) = self.captured_backtrace() {
+            backtraces.push((self.description(), backtrace));
+        }
+
+        let mut cause: Option<&(dyn error::Error + 'static)> = Some(self.error.as_ref());
+        while let Some(err) = cause {
+            if let Some(err) = err.downcast_ref::<Error>() {
+                if let Some(backtrace) = err.captured_backtrace() {
+                    backtraces.push((err.description(), backtrace));
+                }
+            }
+
+            cause = err.source();
+        }
+
+        backtraces
+    }
+
+    fn captured_backtrace(&self) -> Option<&std::backtrace::Backtrace> {
+        self.backtrace
+            .as_ref()
+            .filter(|backtrace| backtrace.status() == std::backtrace::BacktraceStatus::Captured)
     }
 
     fn caused_by(&self) -> Vec<String> {
@@ -354,6 +423,35 @@ mod tests {
         #[cfg(not(feature = "backtraces"))]
         {
             assert!(err.backtrace().is_none());
+        }
+    }
+
+    #[test]
+    fn test_message_with_backtrace() {
+        let err = crate::wrap_system(
+            crate::system("Inner failure.", &["Check inner systems"]),
+            "Outer failure.",
+            &["Check outer configuration"],
+        );
+
+        let message = err.message_with_backtrace();
+
+        // The human-readable message is always the prefix of the output.
+        assert!(message.starts_with(&err.message()));
+
+        #[cfg(feature = "force_backtraces")]
+        {
+            // Both the outer and inner errors captured a backtrace, so both are
+            // rendered recursively.
+            assert_eq!(message.matches("Backtrace (").count(), 2);
+            assert!(message.contains("Backtrace (Outer failure.):"));
+            assert!(message.contains("Backtrace (Inner failure.):"));
+        }
+
+        #[cfg(not(feature = "backtraces"))]
+        {
+            // With no backtraces available the output matches `message`.
+            assert_eq!(message, err.message());
         }
     }
 }
