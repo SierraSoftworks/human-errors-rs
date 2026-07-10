@@ -244,13 +244,21 @@ impl Error {
     /// println!("{}", err.message_with_backtrace());
     /// ```
     pub fn message_with_backtrace(&self) -> String {
-        let mut message = self.message();
-
-        for (description, backtrace) in self.backtraces() {
-            message.push_str(&format!("\n\nBacktrace ({description}):\n{backtrace}"));
+        #[cfg(not(feature = "backtraces"))]
+        {
+            self.message()
         }
 
-        message
+        #[cfg(feature = "backtraces")]
+        {
+            let mut message = self.message();
+
+            for (description, backtrace) in crate::backtraces::collect(self) {
+                message.push_str(&format!("\n\nBacktrace ({description}):\n{backtrace}"));
+            }
+
+            message
+        }
     }
 
     /// Gets the backtrace associated with this error, if available.
@@ -273,39 +281,6 @@ impl Error {
     /// }
     pub fn backtrace(&self) -> Option<&std::backtrace::Backtrace> {
         self.backtrace.as_ref()
-    }
-
-    /// Collects the captured backtraces for this error and its causal chain.
-    ///
-    /// Walks this error and each causal [`Error`] which recorded a backtrace,
-    /// pairing every captured backtrace with the description of the error it
-    /// belongs to. Errors without a successfully captured backtrace (for
-    /// example when the `backtraces` feature is disabled) are skipped.
-    pub(crate) fn backtraces(&self) -> Vec<(String, &std::backtrace::Backtrace)> {
-        let mut backtraces = Vec::new();
-
-        if let Some(backtrace) = self.captured_backtrace() {
-            backtraces.push((self.description(), backtrace));
-        }
-
-        let mut cause: Option<&(dyn error::Error + 'static)> = Some(self.error.as_ref());
-        while let Some(err) = cause {
-            if let Some(err) = err.downcast_ref::<Error>() {
-                if let Some(backtrace) = err.captured_backtrace() {
-                    backtraces.push((err.description(), backtrace));
-                }
-            }
-
-            cause = err.source();
-        }
-
-        backtraces
-    }
-
-    fn captured_backtrace(&self) -> Option<&std::backtrace::Backtrace> {
-        self.backtrace
-            .as_ref()
-            .filter(|backtrace| backtrace.status() == std::backtrace::BacktraceStatus::Captured)
     }
 
     fn caused_by(&self) -> Vec<String> {

@@ -126,7 +126,8 @@ impl Display for Renderer<'_> {
         }
 
         if self.backtraces {
-            for (description, backtrace) in self.error.backtraces() {
+            #[cfg(feature = "backtraces")]
+            for (description, backtrace) in crate::backtraces::collect(self.error) {
                 writeln!(f)?;
                 write_box(
                     f,
