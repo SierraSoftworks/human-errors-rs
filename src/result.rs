@@ -228,8 +228,6 @@ where
 
 #[cfg(test)]
 mod tests {
-    use std::error::Error;
-
     use super::*;
 
     #[test]

@@ -23,3 +23,5 @@ textwrap = { version = "0.16.2", optional = true }
 default = []
 pretty = ["dep:cli-boxes", "dep:colored", "dep:textwrap"]
 serde = ["dep:serde"]
+backtraces = []
+force_backtraces = ["backtraces"]

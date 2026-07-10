@@ -29,6 +29,7 @@ pub struct Error {
     pub(crate) kind: Kind,
     pub(crate) error: Box<dyn error::Error + Send + Sync>,
     pub(crate) advice: &'static [&'static str],
+    pub(crate) backtrace: Option<std::backtrace::Backtrace>,
 }
 
 impl Error {
@@ -52,6 +53,12 @@ impl Error {
             error: error.into(),
             kind,
             advice,
+            #[cfg(feature = "force_backtraces")]
+            backtrace: Some(std::backtrace::Backtrace::force_capture()),
+            #[cfg(all(not(feature = "force_backtraces"), feature = "backtraces"))]
+            backtrace: Some(std::backtrace::Backtrace::capture()),
+            #[cfg(not(feature = "backtraces"))]
+            backtrace: None,
         }
     }
 
@@ -189,7 +196,7 @@ impl Error {
                     "{}\n\nThis was caused by:\n - {}\n\nTo try and fix this, you can:\n - {}",
                     hero_message,
                     cause.join("\n - "),
-                    advice.join("\n - ")
+                    advice.join("\n - "),
                 )
             }
             (cause, _) if !cause.is_empty() => {
@@ -208,6 +215,28 @@ impl Error {
             }
             _ => hero_message,
         }
+    }
+
+    /// Gets the backtrace associated with this error, if available.
+    ///
+    /// Returns `Some` if the `backtraces` feature is enabled and a backtrace was captured when this error was created, otherwise returns `None`.
+    ///
+    /// # Examples
+    /// ```
+    /// use human_errors;
+    ///
+    /// let err = human_errors::user(
+    ///   "We could not open the config file you provided.",
+    ///   &["Make sure that the file exists and is readable by the application."],
+    /// );
+    ///
+    /// if let Some(backtrace) = err.backtrace() {
+    ///     println!("Backtrace:\n{}", backtrace);
+    /// } else {
+    ///     println!("Backtrace not available.");
+    /// }
+    pub fn backtrace(&self) -> Option<&std::backtrace::Backtrace> {
+        self.backtrace.as_ref()
     }
 
     fn caused_by(&self) -> Vec<String> {
@@ -307,5 +336,24 @@ mod tests {
             high_level_err.advice(),
             vec!["Check low-level systems", "Check high-level configuration"]
         );
+    }
+
+    #[test]
+    fn test_backtrace_capture() {
+        let err = Error::new(
+            "Something bad happened.",
+            Kind::User,
+            &["Avoid bad things happening in future"],
+        );
+
+        #[cfg(feature = "backtraces")]
+        {
+            assert!(err.backtrace().is_some());
+        }
+
+        #[cfg(not(feature = "backtraces"))]
+        {
+            assert!(err.backtrace().is_none());
+        }
     }
 }
