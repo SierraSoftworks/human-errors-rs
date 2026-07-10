@@ -23,12 +23,43 @@ pub fn pretty(err: &Error) -> impl Display {
     Renderer {
         error: err,
         width: 80,
+        backtraces: false,
+    }
+}
+
+/// Returns a displayable representation of the given error, including backtraces.
+///
+/// Behaves like [`pretty`], but additionally renders the backtrace captured for
+/// the error as well as the backtrace of each causal error which recorded one.
+///
+/// Backtraces are only rendered when the `backtraces` (or `force_backtraces`)
+/// feature is enabled and a backtrace was successfully captured (which usually
+/// requires the `RUST_BACKTRACE` environment variable to be set). When no
+/// backtraces are available, this produces the same output as [`pretty`].
+///
+/// # Examples
+/// ```no_run
+/// use human_errors;
+///
+/// let err = human_errors::system(
+///   "We could not connect to the database.",
+///   &["Check that the database is running and reachable."],
+/// );
+///
+/// println!("{}", human_errors::pretty_with_backtraces(&err));
+/// ```
+pub fn pretty_with_backtraces(err: &Error) -> impl Display {
+    Renderer {
+        error: err,
+        width: 120,
+        backtraces: true,
     }
 }
 
 struct Renderer<'a> {
     error: &'a Error,
     width: usize,
+    backtraces: bool,
 }
 
 impl Display for Renderer<'_> {
@@ -41,8 +72,10 @@ impl Display for Renderer<'_> {
             f,
             self.error.description(),
             self.width - 14,
+            0,
+            " ".repeat(14),
             ("", ""),
-            (&format!("{}{}", "│".bright_black(), " ".repeat(14)), ""),
+            (&format!("{}{}", "│".bright_black(), ""), ""),
         )?;
 
         let mut source = self.error.source();
@@ -72,11 +105,10 @@ impl Display for Renderer<'_> {
                 f,
                 description,
                 self.width - 14,
+                0,
+                " ".repeat(14),
                 ("".bright_black().as_ref(), ""),
-                (
-                    &format!("{}{}", "│".bright_black(), " ".repeat(13)).bright_black(),
-                    "",
-                ),
+                (&format!("{}{}", "│".bright_black(), "").bright_black(), ""),
             )?;
         }
 
@@ -91,6 +123,20 @@ impl Display for Renderer<'_> {
                 cli_boxes::BoxChars::ROUND,
                 self.width,
             )?;
+        }
+
+        if self.backtraces {
+            #[cfg(feature = "backtraces")]
+            for (description, backtrace) in crate::backtraces::collect(self.error) {
+                writeln!(f)?;
+                write_box(
+                    f,
+                    "Backtrace",
+                    format!("{description}\n\n{backtrace}"),
+                    cli_boxes::BoxChars::ROUND,
+                    self.width,
+                )?;
+            }
         }
 
         Ok(())
@@ -110,13 +156,21 @@ fn write_wrapped<D: Display + Copy>(
     f: &mut std::fmt::Formatter<'_>,
     content: impl AsRef<str>,
     width: usize,
+    padding: usize,
+    indent: impl AsRef<str>,
     first_line: (D, D),
     other_lines: (D, D),
 ) -> std::fmt::Result {
     use colored::Colorize;
 
     let mut first = true;
-    for chunk in textwrap::wrap(content.as_ref(), width) {
+    let padding_str = " ".repeat(padding);
+    for chunk in textwrap::wrap(
+        content.as_ref(),
+        textwrap::Options::new(width - 2 * padding)
+            .break_words(true)
+            .subsequent_indent(indent.as_ref()),
+    ) {
         let (prefix, suffix) = if first {
             first = false;
             first_line
@@ -125,11 +179,9 @@ fn write_wrapped<D: Display + Copy>(
         };
         writeln!(
             f,
-            "{}{}{}{}",
-            prefix,
+            "{prefix}{padding_str}{}{}{padding_str}{suffix}",
             chunk.bright_white(),
-            " ".repeat(width.saturating_sub(chunk.len())),
-            suffix
+            " ".repeat(width.saturating_sub(chunk.chars().count())),
         )?;
     }
 
@@ -164,7 +216,9 @@ fn write_box(
         write_wrapped(
             f,
             line,
-            width,
+            width - 4,
+            1,
+            "  ",
             (&box_chars.left, &box_chars.right),
             (&box_chars.left, &box_chars.right),
         )?;
@@ -236,5 +290,34 @@ mod tests {
         assert!(rendered.contains("underlying IO error"));
         assert!(rendered.contains("Ensure the file exists and is readable."));
         assert!(rendered.contains("Check your configuration settings."));
+    }
+
+    #[test]
+    fn test_renderer_with_backtraces() {
+        let err = wrap_system(
+            system("Inner failure.", &["Check inner systems"]),
+            "Outer failure.",
+            &["Check outer configuration"],
+        );
+
+        let rendered = format!("{}", pretty_with_backtraces(&err));
+
+        println!("{}", rendered);
+
+        assert!(rendered.contains("Outer failure."));
+
+        // The default renderer never emits backtraces.
+        let plain = format!("{}", pretty(&err));
+        assert!(!plain.contains("Backtrace"));
+
+        #[cfg(feature = "force_backtraces")]
+        {
+            // A backtrace box is rendered for both the outer and inner errors,
+            // adding two boxes on top of whatever the plain renderer produced.
+            assert_eq!(
+                rendered.matches('╭').count(),
+                plain.matches('╭').count() + 2
+            );
+        }
     }
 }

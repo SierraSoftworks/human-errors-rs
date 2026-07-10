@@ -217,6 +217,50 @@ impl Error {
         }
     }
 
+    /// Gets the formatted error, its advice, and any captured backtraces.
+    ///
+    /// Behaves like [`Error::message`], but additionally appends the backtrace
+    /// captured for this error as well as the backtrace of each causal error
+    /// which recorded one. This is primarily useful when diagnosing system
+    /// failures, where the backtraces can help pinpoint where the problem
+    /// originated.
+    ///
+    /// Backtraces are only included when the `backtraces` (or `force_backtraces`)
+    /// feature is enabled and a backtrace was successfully captured (which
+    /// usually requires the `RUST_BACKTRACE` environment variable to be set).
+    /// When no backtraces are available, this method returns the same output as
+    /// [`Error::message`].
+    ///
+    /// # Examples
+    /// ```
+    /// use human_errors;
+    ///
+    /// let err = human_errors::system(
+    ///   "We could not connect to the database.",
+    ///   &["Check that the database is running and reachable."],
+    /// );
+    ///
+    /// // Prints the human-readable message followed by any captured backtraces.
+    /// println!("{}", err.message_with_backtrace());
+    /// ```
+    pub fn message_with_backtrace(&self) -> String {
+        #[cfg(not(feature = "backtraces"))]
+        {
+            self.message()
+        }
+
+        #[cfg(feature = "backtraces")]
+        {
+            let mut message = self.message();
+
+            for (description, backtrace) in crate::backtraces::collect(self) {
+                message.push_str(&format!("\n\nBacktrace ({description}):\n{backtrace}"));
+            }
+
+            message
+        }
+    }
+
     /// Gets the backtrace associated with this error, if available.
     ///
     /// Returns `Some` if the `backtraces` feature is enabled and a backtrace was captured when this error was created, otherwise returns `None`.
@@ -354,6 +398,35 @@ mod tests {
         #[cfg(not(feature = "backtraces"))]
         {
             assert!(err.backtrace().is_none());
+        }
+    }
+
+    #[test]
+    fn test_message_with_backtrace() {
+        let err = crate::wrap_system(
+            crate::system("Inner failure.", &["Check inner systems"]),
+            "Outer failure.",
+            &["Check outer configuration"],
+        );
+
+        let message = err.message_with_backtrace();
+
+        // The human-readable message is always the prefix of the output.
+        assert!(message.starts_with(&err.message()));
+
+        #[cfg(feature = "force_backtraces")]
+        {
+            // Both the outer and inner errors captured a backtrace, so both are
+            // rendered recursively.
+            assert_eq!(message.matches("Backtrace (").count(), 2);
+            assert!(message.contains("Backtrace (Outer failure.):"));
+            assert!(message.contains("Backtrace (Inner failure.):"));
+        }
+
+        #[cfg(not(feature = "backtraces"))]
+        {
+            // With no backtraces available the output matches `message`.
+            assert_eq!(message, err.message());
         }
     }
 }

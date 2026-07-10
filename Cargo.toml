@@ -25,3 +25,14 @@ pretty = ["dep:cli-boxes", "dep:colored", "dep:textwrap"]
 serde = ["dep:serde"]
 backtraces = []
 force_backtraces = ["backtraces"]
+
+[[example]]
+name = "default"
+
+[[example]]
+name = "pretty"
+required-features = ["pretty"]
+
+[[example]]
+name = "backtraces"
+required-features = ["pretty", "force_backtraces"]

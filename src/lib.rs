@@ -15,6 +15,9 @@ mod pretty;
 mod result;
 mod wrapper;
 
+#[cfg(feature = "backtraces")]
+mod backtraces;
+
 pub use error::*;
 pub use helpers::*;
 pub use kind::*;
